@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { UserCircle, BarChart, ClipboardList } from 'lucide-react';
+import { UserCircle, ClipboardList } from 'lucide-react';
 
 const Navigation = () => {
   const location = useLocation();
@@ -16,11 +16,6 @@ const Navigation = () => {
       title: 'Panel Docente',
       path: '/panel',
       icon: <UserCircle className="h-5 w-5" />
-    },
-    {
-      title: 'Estadísticas',
-      path: '/estadisticas',
-      icon: <BarChart className="h-5 w-5" />
     }
   ];
 
