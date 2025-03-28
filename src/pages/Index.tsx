@@ -18,7 +18,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
 import { Loader2 } from 'lucide-react';
