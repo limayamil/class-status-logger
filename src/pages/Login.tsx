@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,16 +42,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="flex flex-col bg-gray-50">
       <Navigation />
       
       <div className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Iniciar Sesión</h1>
-            <p className="text-gray-500 mt-2">
-              Accede al panel docente y estadísticas
-            </p>
+            <h1 className="text-3xl font-bold text-gray-800">Acceso Docente</h1>
+            <p className="text-gray-500 mt-2">Ingresa tus credenciales para continuar</p>
           </div>
           
           <Card>

@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { ESTUDIANTES_REALES } from "./estudiantesData";
 
 interface Student {
   id: string;
@@ -14,47 +15,20 @@ interface AttendanceRecord {
   date: string;
 }
 
-// Mock data for development - This would be replaced with actual API calls to Google Sheets
-const MOCK_STUDENTS: Student[] = Array.from({ length: 150 }, (_, i) => ({
-  id: `student_${i + 1}`,
-  name: `Estudiante ${i + 1}`,
-  dni: `${30000000 + i}`,
+// Convertir datos reales al formato de la aplicación
+const MOCK_STUDENTS: Student[] = ESTUDIANTES_REALES.map((estudiante, index) => ({
+  id: `student_${index + 1}`,
+  name: `${estudiante.nombre} ${estudiante.apellido}`,
+  dni: estudiante.documento
 }));
 
+// Crear un objeto vacío para los registros de asistencia
 const MOCK_ATTENDANCE: Record<string, AttendanceRecord[]> = {};
 
 // Helper to get today's date in YYYY-MM-DD format
 const getTodayDate = (): string => {
   return new Date().toISOString().split('T')[0];
 };
-
-// For development, create some sample attendance data for the past 30 days
-const initializeMockData = () => {
-  const today = new Date();
-  
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
-    
-    // Randomly select between 20 and 120 students who attended
-    const attendanceCount = Math.floor(Math.random() * 100) + 20;
-    const attendingStudents = [...MOCK_STUDENTS]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, attendanceCount);
-      
-    MOCK_ATTENDANCE[dateStr] = attendingStudents.map(student => ({
-      timestamp: date.toISOString(),
-      studentId: student.id,
-      studentName: student.name,
-      dni: student.dni,
-      date: dateStr
-    }));
-  }
-};
-
-// Initialize mock data
-initializeMockData();
 
 // Mock implementation of the service - would be replaced with actual API calls
 export const sheetsService = {
@@ -69,6 +43,19 @@ export const sheetsService = {
   markAttendance: async (studentId: string, studentName: string, dni: string): Promise<boolean> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verificar que el ID del estudiante existe y que el DNI coincide
+    const student = MOCK_STUDENTS.find(s => s.id === studentId);
+    if (!student) {
+      toast.error("Estudiante no encontrado");
+      return false;
+    }
+    
+    // Verificación adicional de seguridad en el backend
+    if (student.dni !== dni) {
+      toast.error("El DNI no coincide con los registros del sistema");
+      return false;
+    }
     
     const today = getTodayDate();
     
@@ -104,7 +91,7 @@ export const sheetsService = {
     return MOCK_ATTENDANCE[date] || [];
   },
   
-  // Get attendance statistics
+  // Get statistics
   getStatistics: async (): Promise<{
     dailyStats: { date: string, count: number }[],
     weeklyStats: { week: string, count: number }[],
@@ -122,6 +109,14 @@ export const sheetsService = {
       date,
       count: MOCK_ATTENDANCE[date]?.length || 0
     }));
+    
+    // Si no hay datos, añadir el día de hoy con 0 asistencias
+    if (dailyStats.length === 0) {
+      dailyStats.push({
+        date: getTodayDate(),
+        count: 0
+      });
+    }
     
     // Weekly stats - Group by week
     const weeklyMap: Record<string, number> = {};
@@ -141,6 +136,17 @@ export const sheetsService = {
       .map(([week, count]) => ({ week, count }))
       .sort((a, b) => new Date(b.week).getTime() - new Date(a.week).getTime())
       .slice(0, 4);
+      
+    // Si no hay datos semanales, añadir la semana actual con 0 asistencias
+    if (weeklyStats.length === 0) {
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      weeklyStats.push({
+        week: weekStart.toISOString().split('T')[0],
+        count: 0
+      });
+    }
     
     // Monthly stats
     const monthlyMap: Record<string, number> = {};
@@ -160,6 +166,15 @@ export const sheetsService = {
       }))
       .sort((a, b) => b.month.localeCompare(a.month))
       .slice(0, 3);
+      
+    // Si no hay datos mensuales, añadir el mes actual con 0 asistencias
+    if (monthlyStats.length === 0) {
+      const today = getTodayDate();
+      monthlyStats.push({
+        month: today.substring(0, 7),
+        count: 0
+      });
+    }
     
     // Student attendance percentage
     const studentAttendance: Record<string, { present: number, name: string }> = {};
@@ -179,12 +194,12 @@ export const sheetsService = {
     });
     
     // Calculate percentage based on total days
-    const totalDays = dates.length;
+    const totalDays = dates.length || 1; // Evitar división por cero
     const studentStats = Object.entries(studentAttendance).map(([studentId, data]) => ({
       studentId,
       studentName: data.name,
       attendancePercentage: totalDays > 0 ? (data.present / totalDays) * 100 : 0
-    })).sort((a, b) => a.attendancePercentage - b.attendancePercentage);
+    })).sort((a, b) => b.attendancePercentage - a.attendancePercentage);
     
     return {
       dailyStats,

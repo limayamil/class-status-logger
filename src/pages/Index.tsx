@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -77,11 +76,6 @@ const Index = () => {
 
   const handleStudentChange = (value: string) => {
     setSelectedStudent(value);
-    // Find the student and auto-fill the DNI
-    const student = students.find(s => s.id === value);
-    if (student) {
-      setDni(student.dni);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,6 +92,13 @@ const Index = () => {
       const student = students.find(s => s.id === selectedStudent);
       if (!student) {
         toast.error("Estudiante no encontrado");
+        return;
+      }
+
+      // Verificar que el DNI ingresado coincide con el DNI del estudiante
+      if (student.dni !== dni) {
+        toast.error("El DNI ingresado no coincide con el registrado para este estudiante");
+        setSubmitting(false);
         return;
       }
 
@@ -121,7 +122,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="flex flex-col bg-gray-50">
       <Navigation />
       
       <div className="flex-1 container mx-auto px-4 py-8">
@@ -136,7 +137,7 @@ const Index = () => {
             <CardHeader>
               <CardTitle>Marcar Asistencia</CardTitle>
               <CardDescription>
-                Selecciona tu nombre y verifica tu DNI para registrar tu asistencia de hoy.
+                Selecciona tu nombre e ingresa tu DNI correctamente para verificar tu identidad y registrar tu asistencia.
               </CardDescription>
             </CardHeader>
             <CardContent>
