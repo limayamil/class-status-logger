@@ -30,6 +30,49 @@ const getTodayDate = (): string => {
   return new Date().toISOString().split('T')[0];
 };
 
+// Función para sincronizar datos desde Make (webhook)
+const fetchAttendanceFromWebhook = async (date: string): Promise<AttendanceRecord[]> => {
+  try {
+    // En un entorno real, aquí haríamos una petición al webhook
+    // para recuperar los datos almacenados externamente
+    // Por ahora, usamos los datos locales como fallback
+    
+    // Este sería el formato de la petición real:
+    /*
+    const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: "GetAttendance",
+        date: date
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error al recuperar datos: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.records.map(record => ({
+      timestamp: record.timestamp,
+      studentId: record.studentId,
+      studentName: `${record.nombre} ${record.apellido}`,
+      dni: record.documento,
+      date: record.fecha
+    }));
+    */
+    
+    // Por ahora devolvemos los datos locales
+    return MOCK_ATTENDANCE[date] || [];
+  } catch (error) {
+    console.error("Error al recuperar datos desde el webhook:", error);
+    // Fallback a datos locales en caso de error
+    return MOCK_ATTENDANCE[date] || [];
+  }
+};
+
 // Mock implementation of the service - would be replaced with actual API calls
 export const sheetsService = {
   // Get all students
@@ -65,30 +108,112 @@ export const sheetsService = {
       return false;
     }
     
-    // Create new attendance record
-    const newRecord: AttendanceRecord = {
-      timestamp: new Date().toISOString(),
-      studentId,
-      studentName,
-      dni,
-      date: today
-    };
+    // Obtener el estudiante original para separar nombre y apellido
+    const estudianteOriginal = ESTUDIANTES_REALES.find(e => e.documento === dni);
     
-    // Add to mock attendance data
-    if (!MOCK_ATTENDANCE[today]) {
-      MOCK_ATTENDANCE[today] = [];
+    if (!estudianteOriginal) {
+      toast.error("Error al procesar los datos del estudiante");
+      return false;
     }
     
-    MOCK_ATTENDANCE[today].push(newRecord);
-    toast.success("Asistencia registrada correctamente");
-    return true;
+    // Crear datos para el webhook
+    const now = new Date();
+    const webhookData = {
+      fecha: today,
+      hora: now.toTimeString().split(' ')[0], // Format: HH:MM:SS
+      documento: dni,
+      nombre: estudianteOriginal.nombre,
+      apellido: estudianteOriginal.apellido
+    };
+    
+    try {
+      console.log("Enviando datos al webhook:", webhookData);
+      
+      // Enviar datos al webhook de Make
+      const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData),
+      });
+      
+      // Imprimir la respuesta para diagnóstico
+      console.log("Respuesta del webhook:", response.status, response.statusText);
+      
+      // Make podría responder con un status 200 pero con un cuerpo de error
+      let responseBody = null;
+      try {
+        responseBody = await response.text();
+        console.log("Cuerpo de la respuesta:", responseBody);
+      } catch (e) {
+        console.log("No se pudo leer el cuerpo de la respuesta");
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Error al registrar asistencia: ${response.statusText}`);
+      }
+      
+      // Create new attendance record para almacenamiento local
+      const newRecord: AttendanceRecord = {
+        timestamp: now.toISOString(),
+        studentId,
+        studentName,
+        dni,
+        date: today
+      };
+      
+      // Add to mock attendance data
+      if (!MOCK_ATTENDANCE[today]) {
+        MOCK_ATTENDANCE[today] = [];
+      }
+      
+      MOCK_ATTENDANCE[today].push(newRecord);
+      toast.success("Asistencia registrada correctamente");
+      return true;
+    } catch (error) {
+      console.error("Error al enviar datos al webhook:", error);
+      
+      // Almacenar localmente de todos modos si el webhook falla
+      const newRecord: AttendanceRecord = {
+        timestamp: new Date().toISOString(),
+        studentId,
+        studentName,
+        dni,
+        date: today
+      };
+      
+      if (!MOCK_ATTENDANCE[today]) {
+        MOCK_ATTENDANCE[today] = [];
+      }
+      
+      MOCK_ATTENDANCE[today].push(newRecord);
+      
+      toast.warning("La asistencia se registró localmente, pero hubo un problema de conexión con el servidor.");
+      return true;
+    }
   },
   
   // Get attendance for a specific date
   getAttendance: async (date: string): Promise<AttendanceRecord[]> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 700));
-    return MOCK_ATTENDANCE[date] || [];
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 700));
+      
+      // Intentar recuperar datos desde el webhook (en un entorno real)
+      const attendanceRecords = await fetchAttendanceFromWebhook(date);
+      
+      // Actualizar el almacenamiento local con los datos recuperados
+      if (attendanceRecords.length > 0) {
+        MOCK_ATTENDANCE[date] = attendanceRecords;
+      }
+      
+      return attendanceRecords;
+    } catch (error) {
+      console.error("Error al obtener registros de asistencia:", error);
+      toast.error("Error al cargar los datos de asistencia");
+      return [];
+    }
   },
   
   // Get statistics
@@ -209,19 +334,127 @@ export const sheetsService = {
     };
   },
   
-  // Export attendance to PDF (mock implementation)
+  // Export attendance to PDF (using webhook)
   exportToPDF: async (date: string): Promise<boolean> => {
-    toast.info("Exportando a PDF... (simulación)");
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast.success("Archivo PDF generado correctamente. Descarga iniciada.");
-    return true;
+    toast.info("Exportando a PDF...");
+    
+    try {
+      // Obtener registros de asistencia para la fecha
+      const attendanceRecords = MOCK_ATTENDANCE[date] || [];
+      
+      // Preparar datos para el webhook
+      const webhookData = {
+        action: "ExportToPDF",
+        date: date,
+        records: attendanceRecords.map(record => {
+          // Encontrar estudiante original para separar nombre y apellido
+          const estudianteOriginal = ESTUDIANTES_REALES.find(e => e.documento === record.dni);
+          
+          return {
+            fecha: date,
+            hora: new Date(record.timestamp).toTimeString().split(' ')[0],
+            documento: record.dni,
+            nombre: estudianteOriginal ? estudianteOriginal.nombre : '',
+            apellido: estudianteOriginal ? estudianteOriginal.apellido : '',
+            nombreCompleto: record.studentName
+          };
+        })
+      };
+      
+      console.log("Enviando datos de exportación PDF:", webhookData);
+      
+      // Enviar datos al webhook
+      const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData),
+      });
+      
+      // Imprimir la respuesta para diagnóstico
+      console.log("Respuesta del webhook (PDF):", response.status, response.statusText);
+      
+      // Intentar leer el cuerpo de la respuesta
+      try {
+        const responseBody = await response.text();
+        console.log("Cuerpo de la respuesta:", responseBody);
+      } catch (e) {
+        console.log("No se pudo leer el cuerpo de la respuesta");
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Error al exportar a PDF: ${response.statusText}`);
+      }
+      
+      toast.success("Archivo PDF generado correctamente. Descarga iniciada.");
+      return true;
+    } catch (error) {
+      console.error("Error al exportar a PDF:", error);
+      toast.error("Error al exportar a PDF. Intenta de nuevo.");
+      return false;
+    }
   },
   
-  // Export attendance to Google Sheets (mock implementation)
+  // Export attendance to Google Sheets (using webhook)
   exportToSheets: async (date: string): Promise<boolean> => {
-    toast.info("Exportando a Google Sheets... (simulación)");
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast.success("Datos exportados correctamente a Google Sheets.");
-    return true;
+    toast.info("Exportando a Google Sheets...");
+    
+    try {
+      // Obtener registros de asistencia para la fecha
+      const attendanceRecords = MOCK_ATTENDANCE[date] || [];
+      
+      // Preparar datos para el webhook
+      const webhookData = {
+        action: "ExportToSheets",
+        date: date,
+        records: attendanceRecords.map(record => {
+          // Encontrar estudiante original para separar nombre y apellido
+          const estudianteOriginal = ESTUDIANTES_REALES.find(e => e.documento === record.dni);
+          
+          return {
+            fecha: date,
+            hora: new Date(record.timestamp).toTimeString().split(' ')[0],
+            documento: record.dni,
+            nombre: estudianteOriginal ? estudianteOriginal.nombre : '',
+            apellido: estudianteOriginal ? estudianteOriginal.apellido : '',
+            nombreCompleto: record.studentName
+          };
+        })
+      };
+      
+      console.log("Enviando datos de exportación a Sheets:", webhookData);
+      
+      // Enviar datos al webhook
+      const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData),
+      });
+      
+      // Imprimir la respuesta para diagnóstico
+      console.log("Respuesta del webhook (Sheets):", response.status, response.statusText);
+      
+      // Intentar leer el cuerpo de la respuesta
+      try {
+        const responseBody = await response.text();
+        console.log("Cuerpo de la respuesta:", responseBody);
+      } catch (e) {
+        console.log("No se pudo leer el cuerpo de la respuesta");
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Error al exportar a Google Sheets: ${response.statusText}`);
+      }
+      
+      toast.success("Datos exportados correctamente a Google Sheets.");
+      return true;
+    } catch (error) {
+      console.error("Error al exportar a Google Sheets:", error);
+      toast.error("Error al exportar a Google Sheets. Intenta de nuevo.");
+      return false;
+    }
   }
 };
