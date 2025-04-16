@@ -601,6 +601,8 @@ const TeacherPanel = () => {
                             <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Estudiante</th>
                             {/* Add Regularidad header */}
                             <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Regularidad</th>
+                            {/* Add Progreso header */}
+                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Progreso</th>
                             {/* Changed text-gray-500 to text-muted-foreground */}
                             <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Asistencias (últ. 30 días)</th>
                           </tr>
@@ -609,17 +611,41 @@ const TeacherPanel = () => {
                           {/* Mostrar los 15 estudiantes con menos asistencias */}
                           {stats.studentStats.slice(0, 15).map((student, index) => (
                             // Changed border-gray-100 to border-border/10
-                            <tr key={student.studentName + index} className="border-b border-border/10">
-                              {/* Changed text-gray-800 to text-foreground */}
-                              <td className="py-3 px-4 text-foreground">{student.studentName}</td>
-                              {/* Add Regularidad data cell */}
-                              <td className="py-3 px-4 text-center text-muted-foreground">
-                                {student.totalAttendanceCount} / 23
-                              </td>
-                              {/* Changed text-gray-800 to text-foreground */}
-                              <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td>
-                            </tr>
-                          ))}
+                          {/* Mostrar los 15 estudiantes con menos asistencias */}
+                          {stats.studentStats.slice(0, 15).map((student, index) => {
+                            // Calculate temporary percentage based on total presence
+                            const hasAttended = student.totalAttendanceCount > 0;
+                            const tempPercentage = hasAttended ? 100 : 0;
+                            const progressBarClass = `h-2.5 rounded-full ${hasAttended ? 'bg-green-500' : 'bg-red-500'}`;
+                            const progressWidth = `${tempPercentage}%`;
+
+                            return (
+                              <tr key={student.studentName + index} className="border-b border-border/10">
+                                {/* Changed text-gray-800 to text-foreground */}
+                                <td className="py-3 px-4 text-foreground">{student.studentName}</td>
+                                {/* Add Regularidad data cell */}
+                                <td className="py-3 px-4 text-center text-muted-foreground">
+                                  {student.totalAttendanceCount} / 23
+                                </td>
+                                {/* Add Progreso data cell */}
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center">
+                                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700"> {/* Added dark mode bg */}
+                                      <div
+                                        className={progressBarClass}
+                                        style={{ width: progressWidth }}
+                                      ></div>
+                                    </div>
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                      {tempPercentage}%
+                                    </span>
+                                  </div>
+                                </td>
+                                {/* Changed text-gray-800 to text-foreground */}
+                                <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                       </div>

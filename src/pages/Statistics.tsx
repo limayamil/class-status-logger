@@ -262,8 +262,8 @@ const Statistics = () => {
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estudiante</th>
                         {/* Add Regularidad header */}
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Regularidad</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Porcentaje</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estado</th>
+                        {/* Rename Porcentaje to Progreso and remove Estado header */}
+                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Progreso</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -298,11 +298,7 @@ const Statistics = () => {
                                 </span>
                               </div>
                             </td>
-                            <td className="py-3 px-4">
-                              <span className={statusBadgeClass}>
-                                {statusText}
-                            </span>
-                          </td>
+                            {/* Remove the Estado td */}
                         </tr>
                       ))}
                     </tbody>
