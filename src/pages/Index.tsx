@@ -209,7 +209,7 @@ const Index = () => {
 
   return (
     // Changed bg-gray-50 to bg-background
-    <div className="flex flex-col bg-background min-h-screen"> {/* Asegurar min-h-screen para layout */}
+    <div className="flex flex-col bg-background"> {/* REMOVED min-h-screen */}
       <Navigation />
 
       <motion.div // Envolver el contenedor principal del contenido
