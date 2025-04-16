@@ -96,7 +96,7 @@ const Statistics = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Estadísticas de Asistencia</h1>
-            <p className="text-brand-purple">Bienvenido, {user?.name}</p>
+            <p className="text-brand-purple">Bienvenido/a, {user?.name}</p>
           </div>
           
           <Button 

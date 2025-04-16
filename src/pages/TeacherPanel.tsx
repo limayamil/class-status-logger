@@ -222,7 +222,7 @@ const TeacherPanel = () => {
           {/* Changed text-gray-800 to text-foreground */}
           <h1 className="text-3xl font-bold text-foreground">Panel Docente</h1> 
           {/* Changed text-brand-purple to text-primary */}
-          <p className="text-primary mt-2">Bienvenido, {user?.name}</p> 
+          <p className="text-primary mt-2">Bienvenido/a, {user?.name}</p> 
         </div>
 
         <Tabs defaultValue="attendance" className="w-full">
