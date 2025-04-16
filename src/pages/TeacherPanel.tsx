@@ -609,9 +609,6 @@ const TeacherPanel = () => {
                         </thead>
                         <tbody>
                           {/* Mostrar los 15 estudiantes con menos asistencias */}
-                          {stats.studentStats.slice(0, 15).map((student, index) => (
-                            // Changed border-gray-100 to border-border/10
-                          {/* Mostrar los 15 estudiantes con menos asistencias */}
                           {stats.studentStats.slice(0, 15).map((student, index) => {
                             // Calculate temporary percentage based on total presence
                             const hasAttended = student.totalAttendanceCount > 0;
