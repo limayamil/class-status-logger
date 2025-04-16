@@ -221,7 +221,7 @@ const Index = () => {
         <div className="max-w-md w-full"> {/* Asegurar que tome el ancho completo dentro del contenedor motion */}
           <div className="text-center mb-8">
             {/* Changed text-gray-800 to text-foreground */}
-            <h1 className="text-3xl font-bold text-foreground">Registro de Asistencia</h1>
+            <h1 className="text-3xl font-bold text-foreground">Asistencia - Taller de medios</h1>
             {/* Kept text-brand-purple for now, can change to text-primary if needed */}
             <p className="text-brand-purple mt-2 capitalize">{currentDate}</p>
             {/* Changed text-gray-500 to text-muted-foreground */}
