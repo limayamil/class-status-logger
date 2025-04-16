@@ -38,11 +38,12 @@ interface AsistenciaDocumentFromAPI {
   registradoEn: string; // La fecha vendrá como string ISO
 }
 
+// Interfaz adaptada a la respuesta de get-statistics.ts
 interface StatisticsData {
   dailyStats: { date: string; count: number }[];
-  weeklyStats: { week: string; count: number }[];
-  monthlyStats: { month: string; count: number }[];
-  studentStats: { studentId: string; studentName: string; attendancePercentage: number }[];
+  weeklyStats: { weekStartDate: string; count: number }[]; // Campo renombrado
+  monthlyStats: { month: string; count: number }[]; // Formato YYYY-MM
+  studentStats: { studentName: string; attendanceCount: number }[]; // Campos cambiados
 }
 
 const TeacherPanel = () => {
@@ -103,11 +104,25 @@ const TeacherPanel = () => {
 
   const fetchStatistics = async () => {
     setStatsLoading(true);
+    setStats(null); // Limpiar stats anteriores
     try {
-      const data = await sheetsService.getStatistics();
-      setStats(data);
-    } catch (error) {
-      toast.error('Error al cargar las estadísticas');
+      // Llamar a la nueva función Netlify para obtener estadísticas
+      const response = await fetch(`/.netlify/functions/get-statistics`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
+        throw new Error(errorData.message || `Error ${response.status} al obtener estadísticas`);
+      }
+
+      const statsData: StatisticsData = await response.json();
+      setStats(statsData);
+
+    } catch (error: unknown) {
+       let errorMessage = "Error al cargar las estadísticas";
+       if (error instanceof Error) {
+          errorMessage = `Error al cargar estadísticas: ${error.message}`;
+       }
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setStatsLoading(false);
@@ -398,17 +413,18 @@ const TeacherPanel = () => {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={stats.weeklyStats}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="week" 
+                          <XAxis
+                            dataKey="weekStartDate" // Usar el nuevo campo
                             tickFormatter={(tick) => {
-                              const date = new Date(tick);
-                              return `Sem ${date.getDate()}/${date.getMonth() + 1}`;
+                              // Formatear la fecha de inicio de semana
+                              const date = new Date(tick + 'T00:00:00'); // Asegurar que se interprete como local
+                              return `Sem ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' })}`;
                             }}
                           />
                           <YAxis />
-                          <RechartsTooltip 
+                          <RechartsTooltip
                             formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: string) => `Semana del ${new Date(label).toLocaleDateString('es-ES', { 
+                            labelFormatter={(label: string) => `Semana del ${new Date(label + 'T00:00:00').toLocaleDateString('es-ES', {
                               day: 'numeric',
                               month: 'long'
                             })}`}
@@ -474,46 +490,17 @@ const TeacherPanel = () => {
                         <thead>
                           <tr className="border-b border-gray-200">
                             <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estudiante</th>
-                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Porcentaje</th>
-                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estado</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Asistencias (últ. 30 días)</th>
+                            {/* <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estado</th> */} {/* Columna Estado eliminada */}
                           </tr>
                         </thead>
                         <tbody>
-                          {stats.studentStats.slice(0, 15).map((student) => (
-                            <tr key={student.studentId} className="border-b border-gray-100">
+                          {/* Mostrar los 15 estudiantes con menos asistencias */}
+                          {stats.studentStats.slice(0, 15).map((student, index) => (
+                            <tr key={student.studentName + index} className="border-b border-gray-100"> {/* Usar nombre + índice como key */}
                               <td className="py-3 px-4 text-gray-800">{student.studentName}</td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center">
-                                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                    <div 
-                                      className={`h-2.5 rounded-full ${
-                                        student.attendancePercentage < 50 ? 'bg-red-500' : 
-                                        student.attendancePercentage < 75 ? 'bg-yellow-500' : 
-                                        'bg-green-500'
-                                      }`}
-                                      style={{ width: `${student.attendancePercentage}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="ml-2 text-sm text-gray-600">
-                                    {Math.round(student.attendancePercentage)}%
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                  student.attendancePercentage < 50 
-                                    ? 'bg-red-100 text-red-800' 
-                                    : student.attendancePercentage < 75 
-                                    ? 'bg-yellow-100 text-yellow-800' 
-                                    : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {student.attendancePercentage < 50 
-                                    ? 'Crítico' 
-                                    : student.attendancePercentage < 75 
-                                    ? 'Atención' 
-                                    : 'Regular'}
-                                </span>
-                              </td>
+                              <td className="py-3 px-4 text-center text-gray-800">{student.attendanceCount}</td>
+                              {/* Celda Estado eliminada */}
                             </tr>
                           ))}
                         </tbody>
