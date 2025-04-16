@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,8 @@ interface StatisticsData {
   dailyStats: { date: string; count: number }[];
   weeklyStats: { week: string; count: number }[];
   monthlyStats: { month: string; count: number }[];
-  studentStats: { studentId: string; studentName: string; attendancePercentage: number }[];
+  // Update studentStats interface to use attendedClassesCount
+  studentStats: { studentId: string; studentName: string; attendedClassesCount: number }[];
 }
 
 const Statistics = () => {
@@ -260,44 +260,47 @@ const Statistics = () => {
                     <thead>
                       <tr className="border-b border-gray-200">
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estudiante</th>
+                        {/* Add Regularidad header */}
+                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Regularidad</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Porcentaje</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.studentStats.slice(0, 15).map((student) => (
-                        <tr key={student.studentId} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-gray-800">{student.studentName}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                <div 
-                                  className={`h-2.5 rounded-full ${
-                                    student.attendancePercentage < 50 ? 'bg-red-500' : 
-                                    student.attendancePercentage < 75 ? 'bg-yellow-500' : 
-                                    'bg-green-500'
-                                  }`}
-                                  style={{ width: `${student.attendancePercentage}%` }}
-                                ></div>
+                      {stats.studentStats.slice(0, 15).map((student) => {
+                        // Calculate temporary percentage based on presence
+                        const tempPercentage = student.attendedClassesCount > 0 ? 100 : 0;
+                        const isPresent = student.attendedClassesCount > 0;
+
+                        // Remove comments
+                        const progressBarClass = isPresent ? "h-2.5 rounded-full bg-green-500" : "h-2.5 rounded-full bg-red-500";
+                        const statusBadgeClass = isPresent ? "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800" : "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800";
+                        const statusText = isPresent ? 'Presente' : 'Ausente';
+                        const progressWidth = `${tempPercentage}%`;
+
+                        return (
+                          <tr key={student.studentId} className="border-b border-gray-100">
+                            <td className="py-3 px-4 text-gray-800">{student.studentName}</td>
+                            {/* Add Regularidad data cell */}
+                            <td className="py-3 px-4 text-gray-600 text-sm">
+                              {student.attendedClassesCount} / 23
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                  <div
+                                    className={progressBarClass}
+                                    style={{ width: progressWidth }}
+                                  ></div>
+                                </div>
+                                <span className="ml-2 text-sm text-gray-600">
+                                  {tempPercentage}%
+                                </span>
                               </div>
-                              <span className="ml-2 text-sm text-gray-600">
-                                {Math.round(student.attendancePercentage)}%
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              student.attendancePercentage < 50 
-                                ? 'bg-red-100 text-red-800' 
-                                : student.attendancePercentage < 75 
-                                ? 'bg-yellow-100 text-yellow-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {student.attendancePercentage < 50 
-                                ? 'Crítico' 
-                                : student.attendancePercentage < 75 
-                                ? 'Atención' 
-                                : 'Regular'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={statusBadgeClass}>
+                                {statusText}
                             </span>
                           </td>
                         </tr>

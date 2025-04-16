@@ -226,7 +226,8 @@ export const sheetsService = {
     dailyStats: { date: string, count: number }[],
     weeklyStats: { week: string, count: number }[],
     monthlyStats: { month: string, count: number }[],
-    studentStats: { studentId: string, studentName: string, attendancePercentage: number }[]
+    // Update the return type for studentStats
+    studentStats: { studentId: string, studentName: string, attendedClassesCount: number }[] 
   }> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1200));
@@ -323,13 +324,14 @@ export const sheetsService = {
       });
     });
     
-    // Calculate percentage based on total days
-    const totalDays = dates.length || 1; // Evitar división por cero
+    // Calculate attendance count
+    // const totalDays = dates.length || 1; // No longer needed for percentage calculation here
     const studentStats = Object.entries(studentAttendance).map(([studentId, data]) => ({
       studentId,
       studentName: data.name,
-      attendancePercentage: totalDays > 0 ? (data.present / totalDays) * 100 : 0
-    })).sort((a, b) => b.attendancePercentage - a.attendancePercentage);
+      // Return the raw count of attended classes
+      attendedClassesCount: data.present 
+    })).sort((a, b) => b.attendedClassesCount - a.attendedClassesCount); // Sort by attended count
     
     return {
       dailyStats,
