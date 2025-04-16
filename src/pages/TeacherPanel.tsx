@@ -18,12 +18,24 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
+// Interfaz adaptada a los datos de MongoDB
 interface AttendanceRecord {
-  timestamp: string;
-  studentId: string;
-  studentName: string;
-  dni: string;
-  date: string;
+  _id?: string; // El _id de MongoDB (opcional, como string)
+  timestamp: string; // Vendrá de 'registradoEn'
+  studentName: string; // Vendrá de 'nombreEstudiante'
+  date: string; // Vendrá de 'fecha'
+  // DNI y studentId no están disponibles directamente en esta colección
+}
+
+// Interfaz para el documento recibido de la función Netlify
+interface AsistenciaDocumentFromAPI {
+  _id?: string;
+  fecha: string;
+  nombreEstudiante: string;
+  estado: string; // 'Presente', 'Ausente', etc.
+  materia?: string;
+  comision?: string;
+  registradoEn: string; // La fecha vendrá como string ISO
 }
 
 interface StatisticsData {
@@ -54,11 +66,35 @@ const TeacherPanel = () => {
 
   const fetchAttendanceRecords = async (selectedDate: string) => {
     setLoading(true);
+    setAttendanceRecords([]); // Limpiar registros anteriores mientras carga
     try {
-      const records = await sheetsService.getAttendance(selectedDate);
-      setAttendanceRecords(records);
-    } catch (error) {
-      toast.error("Error al cargar los registros de asistencia");
+      // Llamar a la nueva función Netlify
+      const response = await fetch(`/.netlify/functions/get-asistencias?date=${selectedDate}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
+        throw new Error(errorData.message || `Error ${response.status} al obtener asistencias`);
+      }
+
+      const recordsFromAPI: AsistenciaDocumentFromAPI[] = await response.json();
+
+      // Mapear los datos recibidos a la interfaz AttendanceRecord que usa el componente
+      const mappedRecords: AttendanceRecord[] = recordsFromAPI.map(record => ({
+        _id: record._id,
+        timestamp: record.registradoEn, // Usar registradoEn como timestamp
+        studentName: record.nombreEstudiante,
+        date: record.fecha,
+        // dni y studentId no están disponibles
+      }));
+
+      setAttendanceRecords(mappedRecords);
+
+    } catch (error: unknown) {
+      let errorMessage = "Error al cargar los registros de asistencia";
+       if (error instanceof Error) {
+          errorMessage = `Error al cargar los registros: ${error.message}`;
+       }
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setLoading(false);
@@ -125,10 +161,10 @@ const TeacherPanel = () => {
     }
   };
 
+  // Filtrar solo por nombre, ya que no tenemos DNI aquí
   const filteredRecords = searchTerm
-    ? attendanceRecords.filter(record => 
-        record.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.dni.includes(searchTerm)
+    ? attendanceRecords.filter(record =>
+        record.studentName.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : attendanceRecords;
 
@@ -234,7 +270,7 @@ const TeacherPanel = () => {
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                     <Input
-                      placeholder="Buscar por nombre o DNI..."
+                      placeholder="Buscar por nombre..." // Actualizar placeholder
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9"
@@ -253,20 +289,22 @@ const TeacherPanel = () => {
                       <thead>
                         <tr className="border-b border-gray-200">
                           <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Nombre</th>
-                          <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">DNI</th>
+                          {/* <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">DNI</th> */} {/* Columna DNI eliminada */}
                           <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Hora</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredRecords.map((record, index) => (
-                          <tr key={record.studentId + index} className="border-b border-gray-100">
+                          // Usar _id si existe, sino el índice como fallback para la key
+                          <tr key={record._id || index} className="border-b border-gray-100">
                             <td className="py-3 px-4 text-gray-800">{record.studentName}</td>
-                            <td className="py-3 px-4 text-gray-800">{record.dni}</td>
+                            {/* <td className="py-3 px-4 text-gray-800">{record.dni}</td> */} {/* Celda DNI eliminada */}
                             <td className="py-3 px-4 text-gray-600">
-                              {new Date(record.timestamp).toLocaleTimeString('es-ES', {
+                              {/* Asegurarse de que timestamp es un string ISO válido antes de crear Date */}
+                              {record.timestamp ? new Date(record.timestamp).toLocaleTimeString('es-ES', {
                                 hour: '2-digit',
                                 minute: '2-digit'
-                              })}
+                              }) : ''} {/* Añadido fallback por si timestamp no existe */}
                             </td>
                           </tr>
                         ))}
