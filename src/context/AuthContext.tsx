@@ -24,21 +24,14 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock users for demonstration
+// Mock user for demonstration
 const MOCK_USERS = [
   {
-    id: '1',
-    name: 'Profesor Demo',
-    email: 'profesor@demo.com',
-    password: 'password123', // In a real app, this would be hashed
-    role: 'teacher' as const,
-  },
-  {
-    id: '2',
-    name: 'Asistente Demo',
-    email: 'asistente@demo.com',
-    password: 'password123', // In a real app, this would be hashed
-    role: 'assistant' as const,
+    id: '1', // Keeping ID 1 for simplicity
+    name: 'Valentina', // Using a simple name for display
+    email: 'valentina@potato-lab.com',
+    password: 'ARC1twar!', // In a real app, this would be hashed
+    role: 'teacher' as const, // Assuming teacher role
   }
 ];
 
