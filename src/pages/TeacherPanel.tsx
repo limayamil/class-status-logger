@@ -45,7 +45,8 @@ interface StatisticsData {
   dailyStats: { date: string; count: number }[];
   weeklyStats: { weekStartDate: string; count: number }[]; // Campo renombrado
   monthlyStats: { month: string; count: number }[]; // Formato YYYY-MM
-  studentStats: { studentName: string; attendanceCount: number }[]; // Campos cambiados
+  // Update studentStats interface to include totalAttendanceCount
+  studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[]; 
 }
 
 const TeacherPanel = () => {
@@ -597,22 +598,26 @@ const TeacherPanel = () => {
                           {/* Changed border-gray-200 to border-border */}
                           <tr className="border-b border-border"> 
                             {/* Changed text-gray-500 to text-muted-foreground */}
-                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Estudiante</th> 
+                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Estudiante</th>
+                            {/* Add Regularidad header */}
+                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Regularidad</th>
                             {/* Changed text-gray-500 to text-muted-foreground */}
-                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Asistencias (últ. 30 días)</th> 
-                            {/* <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estado</th> */} {/* Columna Estado eliminada */}
+                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Asistencias (últ. 30 días)</th>
                           </tr>
                         </thead>
                         <tbody>
                           {/* Mostrar los 15 estudiantes con menos asistencias */}
                           {stats.studentStats.slice(0, 15).map((student, index) => (
                             // Changed border-gray-100 to border-border/10
-                            <tr key={student.studentName + index} className="border-b border-border/10"> 
+                            <tr key={student.studentName + index} className="border-b border-border/10">
                               {/* Changed text-gray-800 to text-foreground */}
-                              <td className="py-3 px-4 text-foreground">{student.studentName}</td> 
+                              <td className="py-3 px-4 text-foreground">{student.studentName}</td>
+                              {/* Add Regularidad data cell */}
+                              <td className="py-3 px-4 text-center text-muted-foreground">
+                                {student.totalAttendanceCount} / 23
+                              </td>
                               {/* Changed text-gray-800 to text-foreground */}
-                              <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td> 
-                              {/* Celda Estado eliminada */}
+                              <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td>
                             </tr>
                           ))}
                         </tbody>

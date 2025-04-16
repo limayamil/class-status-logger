@@ -18,7 +18,8 @@ interface StatisticsResponse {
   dailyStats: { date: string; count: number }[];
   weeklyStats: { weekStartDate: string; count: number }[]; // Usaremos fecha de inicio de semana
   monthlyStats: { month: string; count: number }[]; // Formato YYYY-MM
-  studentStats: { studentName: string; attendanceCount: number }[];
+  // Update studentStats to include total attendance count
+  studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[];
 }
 
 const COLLECTION_NAME = 'asistencias';
@@ -104,14 +105,36 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       { $sort: { attendanceCount: 1 } }, // Ordenar por menos asistencias primero
       { $project: { _id: 0, studentName: "$_id", attendanceCount: 1 } }
     ];
-    const studentStats = await asistenciasCollection.aggregate<{ studentName: string; attendanceCount: number }>(studentPipeline).toArray();
+    const studentStats30Days = await asistenciasCollection.aggregate<{ studentName: string; attendanceCount: number }>(studentPipeline).toArray();
+
+    // --- Calcular Estadísticas Totales por Estudiante ---
+    const totalStudentPipeline = [
+      { $match: { estado: 'Presente' } }, // Match all 'Presente' records regardless of date
+      { $group: { _id: "$nombreEstudiante", totalAttendanceCount: { $sum: 1 } } },
+      { $project: { _id: 0, studentName: "$_id", totalAttendanceCount: 1 } }
+    ];
+    const totalStudentStats = await asistenciasCollection.aggregate<{ studentName: string; totalAttendanceCount: number }>(totalStudentPipeline).toArray();
+
+    // Create a map for quick lookup of total counts
+    const totalCountsMap = new Map<string, number>();
+    totalStudentStats.forEach(stat => {
+      totalCountsMap.set(stat.studentName, stat.totalAttendanceCount);
+    });
+
+    // Combine the stats: Add totalAttendanceCount to the 30-day stats list
+    // The list remains sorted by the 30-day attendance count (lowest first)
+    const combinedStudentStats = studentStats30Days.map(stat30 => ({
+      ...stat30,
+      totalAttendanceCount: totalCountsMap.get(stat30.studentName) || 0 // Get total count, default to 0
+    }));
+
 
     // --- Ensamblar Respuesta ---
     const responseData: StatisticsResponse = {
       dailyStats,
       weeklyStats,
       monthlyStats,
-      studentStats
+      studentStats: combinedStudentStats // Use the combined stats
     };
 
     return {
