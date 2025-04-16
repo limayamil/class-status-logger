@@ -84,7 +84,24 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     // Obtener la colección de MongoDB, especificando el tipo de documento
     const asistenciasCollection = await getCollection<AsistenciaDocument>(COLLECTION_NAME);
 
-    // Crear el documento a insertar
+    // --- Inicio: Validación de Duplicados ---
+    const existingRecord = await asistenciasCollection.findOne({
+      nombreEstudiante: asistenciaData.nombreEstudiante,
+      fecha: asistenciaData.fecha
+    });
+
+    if (existingRecord) {
+      // Si ya existe un registro para este estudiante en esta fecha, devolver error
+      console.warn(`Intento de registro duplicado: ${asistenciaData.nombreEstudiante} en ${asistenciaData.fecha}`);
+      return {
+        statusCode: 409, // Conflict
+        headers: jsonHeaders,
+        body: JSON.stringify({ message: "Ya has registrado tu asistencia hoy." }),
+      };
+    }
+    // --- Fin: Validación de Duplicados ---
+
+    // Crear el documento a insertar (solo si no hay duplicado)
     const documentoAInsertar: Omit<AsistenciaDocument, '_id'> = {
         ...asistenciaData,
         registradoEn: new Date(), // Añadir la marca de tiempo del servidor
