@@ -34,7 +34,13 @@ interface StatisticsData {
 }
 
 const TeacherPanel = () => {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0'); // +1 porque getMonth es 0-indexed
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<'pdf' | 'sheets' | null>(null);
@@ -326,8 +332,8 @@ const TeacherPanel = () => {
                           />
                           <YAxis />
                           <RechartsTooltip 
-                            formatter={(value: any) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: any) => new Date(label).toLocaleDateString('es-ES', { 
+                            formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                            labelFormatter={(label: string) => new Date(label).toLocaleDateString('es-ES', { 
                               weekday: 'long',
                               day: 'numeric', 
                               month: 'long'
@@ -363,8 +369,8 @@ const TeacherPanel = () => {
                           />
                           <YAxis />
                           <RechartsTooltip 
-                            formatter={(value: any) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: any) => `Semana del ${new Date(label).toLocaleDateString('es-ES', { 
+                            formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                            labelFormatter={(label: string) => `Semana del ${new Date(label).toLocaleDateString('es-ES', { 
                               day: 'numeric',
                               month: 'long'
                             })}`}
@@ -399,8 +405,8 @@ const TeacherPanel = () => {
                           />
                           <YAxis />
                           <RechartsTooltip 
-                            formatter={(value: any) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: any) => {
+                            formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                            labelFormatter={(label: string) => {
                               const [year, month] = label.split('-');
                               return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { 
                                 month: 'long',

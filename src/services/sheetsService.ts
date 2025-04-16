@@ -25,9 +25,14 @@ const MOCK_STUDENTS: Student[] = ESTUDIANTES_REALES.map((estudiante, index) => (
 // Crear un objeto vacío para los registros de asistencia
 const MOCK_ATTENDANCE: Record<string, AttendanceRecord[]> = {};
 
-// Helper to get today's date in YYYY-MM-DD format
+// Helper to get today's date in YYYY-MM-DD format based on local time
 const getTodayDate = (): string => {
-  return new Date().toISOString().split('T')[0];
+  const today = new Date();
+  const year = today.getFullYear();
+  // getMonth() is 0-indexed, so add 1
+  const month = (today.getMonth() + 1).toString().padStart(2, '0'); 
+  const day = today.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // Función para sincronizar datos desde Make (webhook)
