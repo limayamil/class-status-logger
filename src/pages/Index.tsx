@@ -102,26 +102,14 @@ const Index = () => {
         return;
       }
 
-      // --- Inicio: Llamada a Google Sheets (Backup) ---
-      let sheetsSuccess = false;
-      try {
-        await sheetsService.markAttendance(
-          student.id,
-          student.name,
-          dni
-        );
-        sheetsSuccess = true; // Marcamos éxito si no hay error
-        // No limpiamos el formulario aquí todavía, esperamos a MongoDB
-      } catch (sheetsError) {
-        toast.error("Error al registrar en Google Sheets (backup)");
-        console.error("Error Google Sheets:", sheetsError);
-        // Continuamos para intentar guardar en MongoDB de todas formas
-      }
-      // --- Fin: Llamada a Google Sheets ---
-
-      // --- Inicio: Llamada a MongoDB (Principal) ---
+      let mongoAttempted = false;
       let mongoSuccess = false;
+      let sheetsSuccess = false;
+      let duplicateDetected = false;
+
+      // --- Inicio: Llamada a MongoDB (Principal y Validación) ---
       try {
+        mongoAttempted = true; // Marcamos que intentamos la operación con Mongo
         const today = new Date();
         const year = today.getFullYear();
         const month = (today.getMonth() + 1).toString().padStart(2, '0');
@@ -143,35 +131,62 @@ const Index = () => {
           body: JSON.stringify(asistenciaData),
         });
 
-        if (!response.ok) {
+        // Analizar la respuesta de la función
+        if (response.status === 201) { // Éxito: Creado en MongoDB
+          const responseData = await response.json();
+          console.log('Respuesta de Netlify Function (MongoDB):', responseData);
+          toast.success("Asistencia registrada correctamente.");
+          mongoSuccess = true;
+        } else if (response.status === 409) { // Conflicto: Duplicado
+          const errorData = await response.json();
+          toast.error(errorData.message || "Ya has registrado tu asistencia hoy.");
+          duplicateDetected = true;
+        } else { // Otro error del servidor
           const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
           throw new Error(errorData.message || `Error ${response.status} al guardar en DB`);
         }
 
-        const responseData = await response.json();
-        console.log('Respuesta de Netlify Function (MongoDB):', responseData);
-        toast.success("Asistencia registrada correctamente en la base de datos.");
-        mongoSuccess = true;
-
       } catch (mongoError: unknown) {
-        let errorMessage = "Error desconocido al registrar en la base de datos.";
+        // Capturar errores de red o errores inesperados al llamar a la función
+        let errorMessage = "Error desconocido al contactar el servidor de registro.";
         if (mongoError instanceof Error) {
-          errorMessage = `Error al registrar en la base de datos: ${mongoError.message}`;
+          errorMessage = `Error al registrar: ${mongoError.message}`;
         }
         toast.error(errorMessage);
-        console.error("Error MongoDB:", mongoError);
+        console.error("Error Fetch/MongoDB:", mongoError);
       }
       // --- Fin: Llamada a MongoDB ---
 
-      // Limpiar formulario solo si al menos una de las operaciones fue exitosa
-      if (sheetsSuccess || mongoSuccess) {
+
+      // --- Inicio: Llamada a Google Sheets (Backup Condicional) ---
+      // Solo intentar guardar en Sheets si MongoDB fue exitoso (no duplicado, no error)
+      if (mongoSuccess) {
+        try {
+          await sheetsService.markAttendance(
+            student.id,
+            student.name,
+            dni
+          );
+          sheetsSuccess = true; // Marcamos éxito de Sheets
+          console.log("Backup en Google Sheets realizado.");
+        } catch (sheetsError) {
+          toast.warning("Asistencia guardada, pero falló el backup en Google Sheets."); // Usar warning ya que lo principal funcionó
+          console.error("Error Google Sheets Backup:", sheetsError);
+        }
+      }
+      // --- Fin: Llamada a Google Sheets ---
+
+
+      // Limpiar formulario solo si la operación principal (Mongo) fue exitosa
+      // O si se detectó un duplicado (para que el usuario no siga intentando)
+      if (mongoSuccess || duplicateDetected) {
         setSelectedStudent('');
         setDni('');
       }
 
-    } catch (error) { // Este catch es más general, por si algo falla antes de las llamadas
-      toast.error("Ocurrió un error inesperado");
-      console.error("Error general en handleSubmit:", error);
+    } catch (error) { // Catch para errores ANTES de las llamadas (ej. find student)
+      toast.error("Ocurrió un error inesperado antes de registrar.");
+      console.error("Error general previo en handleSubmit:", error);
     } finally {
       setSubmitting(false);
     }
