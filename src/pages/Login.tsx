@@ -107,11 +107,7 @@ const Login = () => {
             </CardFooter>
           </Card>
           
-          {/* Updated demo user info and changed text-gray-500 to text-muted-foreground */}
-          <div className="mt-4 text-center text-sm text-muted-foreground"> 
-            <p>Usuario de demostración:</p>
-            <p className="font-medium">valentina@potato-lab.com / ARC1twar!</p>
-          </div>
+          {/* Removed demo user info display */}
         </div>
       </div>
     </div>

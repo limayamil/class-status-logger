@@ -29,7 +29,7 @@ const MOCK_USERS = [
   {
     id: '1', // Keeping ID 1 for simplicity
     name: 'Valentina', // Using a simple name for display
-    email: 'valentina@potato-lab.com',
+    email: 'valentina.virga@potato-lab.com', // Updated email
     password: 'ARC1twar!', // In a real app, this would be hashed
     role: 'teacher' as const, // Assuming teacher role
   }
