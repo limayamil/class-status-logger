@@ -16,7 +16,12 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    // Allow importing JSON modules
+    "resolveJsonModule": true
   },
-  "include": ["vite.config.ts"]
+  // Include Vite config, Netlify functions, and backend services
+  "include": ["vite.config.ts", "netlify/functions/**/*.ts", "src/services/**/*.ts"],
+  // Exclude frontend code and node_modules from this specific config
+  "exclude": ["node_modules", "src/components", "src/pages", "src/hooks", "src/context", "src/lib", "src/App.tsx", "src/main.tsx"]
 }

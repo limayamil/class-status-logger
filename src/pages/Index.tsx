@@ -102,20 +102,76 @@ const Index = () => {
         return;
       }
 
-      const result = await sheetsService.markAttendance(
-        student.id,
-        student.name,
-        dni
-      );
+      // --- Inicio: Llamada a Google Sheets (Backup) ---
+      let sheetsSuccess = false;
+      try {
+        await sheetsService.markAttendance(
+          student.id,
+          student.name,
+          dni
+        );
+        sheetsSuccess = true; // Marcamos éxito si no hay error
+        // No limpiamos el formulario aquí todavía, esperamos a MongoDB
+      } catch (sheetsError) {
+        toast.error("Error al registrar en Google Sheets (backup)");
+        console.error("Error Google Sheets:", sheetsError);
+        // Continuamos para intentar guardar en MongoDB de todas formas
+      }
+      // --- Fin: Llamada a Google Sheets ---
 
-      if (result) {
-        // Clear form after successful submission
+      // --- Inicio: Llamada a MongoDB (Principal) ---
+      let mongoSuccess = false;
+      try {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        const fechaActual = `${year}-${month}-${day}`;
+
+        const asistenciaData = {
+          fecha: fechaActual,
+          nombreEstudiante: student.name,
+          estado: 'Presente' as const, // Aseguramos el tipo literal
+          // Podrías añadir materia/comision aquí si los tuvieras
+        };
+
+        const response = await fetch('/.netlify/functions/registrar-asistencia', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(asistenciaData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
+          throw new Error(errorData.message || `Error ${response.status} al guardar en DB`);
+        }
+
+        const responseData = await response.json();
+        console.log('Respuesta de Netlify Function (MongoDB):', responseData);
+        toast.success("Asistencia registrada correctamente en la base de datos.");
+        mongoSuccess = true;
+
+      } catch (mongoError: unknown) {
+        let errorMessage = "Error desconocido al registrar en la base de datos.";
+        if (mongoError instanceof Error) {
+          errorMessage = `Error al registrar en la base de datos: ${mongoError.message}`;
+        }
+        toast.error(errorMessage);
+        console.error("Error MongoDB:", mongoError);
+      }
+      // --- Fin: Llamada a MongoDB ---
+
+      // Limpiar formulario solo si al menos una de las operaciones fue exitosa
+      if (sheetsSuccess || mongoSuccess) {
         setSelectedStudent('');
         setDni('');
       }
-    } catch (error) {
-      toast.error("Error al registrar asistencia");
-      console.error(error);
+
+    } catch (error) { // Este catch es más general, por si algo falla antes de las llamadas
+      toast.error("Ocurrió un error inesperado");
+      console.error("Error general en handleSubmit:", error);
     } finally {
       setSubmitting(false);
     }
