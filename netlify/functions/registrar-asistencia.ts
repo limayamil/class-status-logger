@@ -96,7 +96,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       return {
         statusCode: 409, // Conflict
         headers: jsonHeaders,
-        body: JSON.stringify({ message: "Ya has registrado tu asistencia hoy." }),
+        body: JSON.stringify({ message: "Ya registraste tu asistencia hoy." }),
       };
     }
     // --- Fin: Validación de Duplicados ---

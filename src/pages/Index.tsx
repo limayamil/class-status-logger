@@ -1,26 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+// Definir variantes de animación fuera del componente
+const sectionVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6, // Duración de la animación
+      ease: "easeOut" // Tipo de easing
+    }
+  }
+};
 
 interface Student {
   id: string;
@@ -60,11 +74,11 @@ const Index = () => {
     const updateDateTime = () => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString());
-      setCurrentDate(now.toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      setCurrentDate(now.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       }));
     };
 
@@ -80,18 +94,19 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedStudent || !dni) {
       toast.error("Por favor, selecciona tu nombre y verifica tu DNI");
       return;
     }
 
     setSubmitting(true);
-    
+
     try {
       const student = students.find(s => s.id === selectedStudent);
       if (!student) {
         toast.error("Estudiante no encontrado");
+        setSubmitting(false); // Añadido para liberar el botón si no se encuentra
         return;
       }
 
@@ -104,7 +119,7 @@ const Index = () => {
 
       let mongoAttempted = false;
       let mongoSuccess = false;
-      let sheetsSuccess = false;
+      // let sheetsSuccess = false; // No se usa directamente para lógica condicional aquí
       let duplicateDetected = false;
 
       // --- Inicio: Llamada a MongoDB (Principal y Validación) ---
@@ -167,7 +182,7 @@ const Index = () => {
             student.name,
             dni
           );
-          sheetsSuccess = true; // Marcamos éxito de Sheets
+          // sheetsSuccess = true; // Marcamos éxito de Sheets
           console.log("Backup en Google Sheets realizado.");
         } catch (sheetsError) {
           toast.warning("Asistencia guardada, pero falló el backup en Google Sheets."); // Usar warning ya que lo principal funcionó
@@ -194,20 +209,25 @@ const Index = () => {
 
   return (
     // Changed bg-gray-50 to bg-background
-    <div className="flex flex-col bg-background"> 
+    <div className="flex flex-col bg-background min-h-screen"> {/* Asegurar min-h-screen para layout */}
       <Navigation />
-      
-      <div className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
+
+      <motion.div // Envolver el contenedor principal del contenido
+        className="flex-1 container mx-auto px-4 py-8 flex items-center justify-center" // Centrar contenido si es posible
+        variants={sectionVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="max-w-md w-full"> {/* Asegurar que tome el ancho completo dentro del contenedor motion */}
           <div className="text-center mb-8">
             {/* Changed text-gray-800 to text-foreground */}
-            <h1 className="text-3xl font-bold text-foreground">Registro de Asistencia</h1> 
+            <h1 className="text-3xl font-bold text-foreground">Registro de Asistencia</h1>
             {/* Kept text-brand-purple for now, can change to text-primary if needed */}
-            <p className="text-brand-purple mt-2 capitalize">{currentDate}</p> 
+            <p className="text-brand-purple mt-2 capitalize">{currentDate}</p>
             {/* Changed text-gray-500 to text-muted-foreground */}
-            <p className="text-muted-foreground">{currentTime}</p> 
+            <p className="text-muted-foreground">{currentTime}</p>
           </div>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Marcar Asistencia</CardTitle>
@@ -224,11 +244,11 @@ const Index = () => {
                       <div className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" /> {/* Added text-primary to spinner */}
                         {/* Changed text-gray-500 to text-muted-foreground */}
-                        <span className="text-sm text-muted-foreground">Cargando estudiantes...</span> 
+                        <span className="text-sm text-muted-foreground">Cargando estudiantes...</span>
                       </div>
                     ) : (
-                      <Select 
-                        value={selectedStudent} 
+                      <Select
+                        value={selectedStudent}
                         onValueChange={handleStudentChange}
                       >
                         <SelectTrigger>
@@ -244,7 +264,7 @@ const Index = () => {
                       </Select>
                     )}
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="dni">DNI</Label>
                     <Input
@@ -259,8 +279,8 @@ const Index = () => {
               </form>
             </CardContent>
             <CardFooter>
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={handleSubmit}
                 disabled={submitting || !selectedStudent || !dni}
               >
@@ -276,7 +296,7 @@ const Index = () => {
             </CardFooter>
           </Card>
         </div>
-      </div>
+      </motion.div> {/* Etiqueta de cierre correcta */}
     </div>
   );
 };

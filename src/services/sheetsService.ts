@@ -174,7 +174,7 @@ export const sheetsService = {
       }
       
       MOCK_ATTENDANCE[today].push(newRecord);
-      toast.success("Asistencia registrada correctamente");
+      toast.success("Estamos procesando tu asistencia...");
       return true;
     } catch (error) {
       console.error("Error al enviar datos al webhook:", error);

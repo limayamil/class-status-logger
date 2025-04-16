@@ -8,6 +8,20 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
+import { motion } from 'framer-motion';
+
+// Definir variantes de animación fuera del componente (reutilizable)
+const sectionVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut"
+    }
+  }
+};
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -45,9 +59,14 @@ const Login = () => {
     // Changed bg-gray-50 to bg-background
     <div className="flex flex-col bg-background"> 
       <Navigation />
-      
-      <div className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
+
+      <motion.div // Envolver el contenedor principal del contenido
+        className="flex-1 container mx-auto px-4 py-8 flex items-center justify-center" // Centrar contenido
+        variants={sectionVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="max-w-md w-full"> {/* Asegurar ancho completo dentro de motion */}
           <div className="text-center mb-8">
             {/* Changed text-gray-800 to text-foreground */}
             <h1 className="text-3xl font-bold text-foreground">Acceso Docente</h1> 
@@ -109,7 +128,7 @@ const Login = () => {
           
           {/* Removed demo user info display */}
         </div>
-      </div>
+      </motion.div> {/* Cerrar motion.div */}
     </div>
   );
 };

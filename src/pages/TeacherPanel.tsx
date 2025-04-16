@@ -16,8 +16,9 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip as RechartsTooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer
 } from 'recharts';
+import { motion } from 'framer-motion';
 
 // Interfaz adaptada a los datos de MongoDB
 interface AttendanceRecord {
@@ -65,6 +66,25 @@ const TeacherPanel = () => {
   const [stats, setStats] = useState<StatisticsData | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [exportingPDF, setExportingPDF] = useState(false);
+
+  // --- Animation Variants ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        staggerChildren: 0.1 // Stagger children inside this container
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+  // --- End Animation Variants ---
+
 
   const fetchAttendanceRecords = async (selectedDate: string) => {
     setLoading(true);
@@ -188,8 +208,16 @@ const TeacherPanel = () => {
     // Changed bg-gray-50 to bg-background
     <div className="flex flex-col bg-background"> 
       <Navigation />
-      
-      <div className="flex-1 container mx-auto px-4 py-8">
+
+      <motion.div // Wrap main content area
+        className="flex-1 container mx-auto px-4 py-8"
+        initial="hidden"
+        animate="visible"
+        variants={{ // Simple fade-in for the whole panel initially
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { duration: 0.5 } }
+        }}
+      >
         <div className="text-center mb-8">
           {/* Changed text-gray-800 to text-foreground */}
           <h1 className="text-3xl font-bold text-foreground">Panel Docente</h1> 
@@ -202,14 +230,20 @@ const TeacherPanel = () => {
             <TabsTrigger value="attendance">Asistencia</TabsTrigger>
             <TabsTrigger value="statistics">Estadísticas</TabsTrigger>
           </TabsList>
-          
+
           {/* Attendance Tab */}
-          <TabsContent value="attendance" className="space-y-4">
-            {/* Header card with summary */}
-            {/* Card component should adapt automatically via CSS variables */}
-            <Card className="shadow-md"> 
-              <CardHeader className="pb-3">
-                <CardTitle>Asistencia del día</CardTitle> 
+          <motion.div // Wrap TabsContent for animation
+            variants={containerVariants} // Use container to potentially stagger items inside later
+            initial="hidden"
+            animate="visible"
+          >
+            <TabsContent value="attendance" className="space-y-4">
+              {/* Header card with summary */}
+              <motion.div variants={itemVariants}> {/* Wrap Card with motion.div */}
+                {/* Card component should adapt automatically via CSS variables */}
+                <Card className="shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle>Asistencia del día</CardTitle>
                 <CardDescription>
                   {date === new Date().toISOString().split('T')[0] ? 'Registros de hoy' : `Registros de ${new Date(date).toLocaleDateString('es-ES', { dateStyle: 'long' })}`}
                 </CardDescription>
@@ -284,13 +318,15 @@ const TeacherPanel = () => {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
+                  </CardContent>
+                </Card>
+              </motion.div>
+
             {/* Student list */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Listado de asistencia</CardTitle>
+            <motion.div variants={itemVariants}> {/* Wrap Card with motion.div */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Listado de asistencia</CardTitle>
                 <div className="mt-2">
                   <div className="relative">
                     {/* Changed text-gray-500 to text-muted-foreground */}
@@ -351,14 +387,21 @@ const TeacherPanel = () => {
                     {searchTerm ? 'No se encontraron estudiantes que coincidan con la búsqueda' : 'No hay registros de asistencia para esta fecha'}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </motion.div>
+            </TabsContent>
+          </motion.div>
 
           {/* Statistics Tab */}
-          <TabsContent value="statistics" className="space-y-4">
-            <div className="flex justify-between items-center mb-8">
-              <CardTitle>Estadísticas de Asistencia</CardTitle>
+          <motion.div // Wrap TabsContent for animation
+            variants={containerVariants} // Use container to stagger items inside
+            initial="hidden"
+            animate="visible"
+          >
+            <TabsContent value="statistics" className="space-y-4">
+              <div className="flex justify-between items-center mb-8">
+                <CardTitle>Estadísticas de Asistencia</CardTitle>
               
               <Button 
                 variant="outline" 
@@ -385,11 +428,13 @@ const TeacherPanel = () => {
                 <Loader2 className="h-12 w-12 animate-spin text-primary" /> 
               </div>
             ) : stats ? (
+              // Apply itemVariants to each card in the grid
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {/* Daily Attendance Card */}
-                <Card className="col-span-full md:col-span-2 lg:col-span-2">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div className="space-y-1">
+                <motion.div variants={itemVariants} className="col-span-full md:col-span-2 lg:col-span-2"> {/* Wrap Card */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="space-y-1">
                       <CardTitle className="text-base font-medium">Asistencia Diaria</CardTitle>
                       <CardDescription>Últimos 7 días</CardDescription>
                     </div>
@@ -427,14 +472,16 @@ const TeacherPanel = () => {
                           <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
                         </BarChart>
                       </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 {/* Weekly Stats */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div className="space-y-1">
+                <motion.div variants={itemVariants}> {/* Wrap Card */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="space-y-1">
                       <CardTitle className="text-base font-medium">Asistencia Semanal</CardTitle>
                       <CardDescription>Últimas 4 semanas</CardDescription>
                     </div>
@@ -475,14 +522,16 @@ const TeacherPanel = () => {
                           <Bar dataKey="count" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} /> 
                         </BarChart>
                       </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 {/* Monthly Stats */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div className="space-y-1">
+                <motion.div variants={itemVariants}> {/* Wrap Card */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="space-y-1">
                       <CardTitle className="text-base font-medium">Asistencia Mensual</CardTitle>
                       <CardDescription>Últimos 3 meses</CardDescription>
                     </div>
@@ -525,14 +574,16 @@ const TeacherPanel = () => {
                           <Bar dataKey="count" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} /> 
                         </BarChart>
                       </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 {/* Student Attendance List */}
-                <Card className="col-span-full">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div className="space-y-1">
+                <motion.div variants={itemVariants} className="col-span-full"> {/* Wrap Card */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="space-y-1">
                       <CardTitle className="text-base font-medium">Asistencia por Estudiante</CardTitle>
                       <CardDescription>Estudiantes con menor asistencia</CardDescription>
                     </div>
@@ -566,9 +617,10 @@ const TeacherPanel = () => {
                           ))}
                         </tbody>
                       </table>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
             ) : (
               // Changed text-gray-500 to text-muted-foreground
@@ -576,9 +628,10 @@ const TeacherPanel = () => {
                 No se pudieron cargar las estadísticas.
               </div>
             )}
-          </TabsContent>
+            </TabsContent>
+          </motion.div>
         </Tabs>
-      </div>
+      </motion.div> {/* Close main content motion.div */}
     </div>
   );
 };

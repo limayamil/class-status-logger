@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { motion } from 'framer-motion';
 
 interface StatisticsData {
   dailyStats: { date: string; count: number }[];
@@ -29,6 +30,24 @@ const Statistics = () => {
   const [loading, setLoading] = useState(true);
   const [exportingPDF, setExportingPDF] = useState(false);
   const { user } = useAuth();
+
+  // --- Animation Variants ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        staggerChildren: 0.1 // Stagger children inside this container
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+  // --- End Animation Variants ---
 
   const fetchStatistics = async () => {
     setLoading(true);
@@ -64,8 +83,16 @@ const Statistics = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navigation />
-      
-      <div className="flex-1 container mx-auto px-4 py-8">
+
+      <motion.div // Wrap main content area
+        className="flex-1 container mx-auto px-4 py-8"
+        initial="hidden"
+        animate="visible"
+        variants={{ // Simple fade-in for the whole page initially
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { duration: 0.5 } }
+        }}
+      >
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Estadísticas de Asistencia</h1>
@@ -96,11 +123,17 @@ const Statistics = () => {
             <Loader2 className="h-12 w-12 animate-spin text-brand-purple" />
           </div>
         ) : stats ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <motion.div // Wrap the grid container for staggering
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {/* Daily Attendance Card */}
-            <Card className="col-span-full md:col-span-2 lg:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
+            <motion.div variants={itemVariants} className="col-span-full md:col-span-2 lg:col-span-2"> {/* Wrap Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="space-y-1">
                   <CardTitle className="text-base font-medium">Asistencia Diaria</CardTitle>
                   <CardDescription>Últimos 7 días</CardDescription>
                 </div>
@@ -127,14 +160,16 @@ const Statistics = () => {
                       <Bar dataKey="count" fill="#9b87f5" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Weekly Stats */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
+            <motion.div variants={itemVariants}> {/* Wrap Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="space-y-1">
                   <CardTitle className="text-base font-medium">Asistencia Semanal</CardTitle>
                   <CardDescription>Últimas 4 semanas</CardDescription>
                 </div>
@@ -163,14 +198,16 @@ const Statistics = () => {
                       <Bar dataKey="count" fill="#7E69AB" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Monthly Stats */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
+            <motion.div variants={itemVariants}> {/* Wrap Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="space-y-1">
                   <CardTitle className="text-base font-medium">Asistencia Mensual</CardTitle>
                   <CardDescription>Últimos 3 meses</CardDescription>
                 </div>
@@ -202,14 +239,16 @@ const Statistics = () => {
                       <Bar dataKey="count" fill="#6E59A5" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Student Attendance List */}
-            <Card className="col-span-full">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
+            <motion.div variants={itemVariants} className="col-span-full"> {/* Wrap Card */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="space-y-1">
                   <CardTitle className="text-base font-medium">Asistencia por Estudiante</CardTitle>
                   <CardDescription>Estudiantes con menor asistencia</CardDescription>
                 </div>
@@ -265,16 +304,17 @@ const Statistics = () => {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div> // Close grid motion.div
         ) : (
           <div className="text-center py-12 text-gray-500">
             No se pudieron cargar las estadísticas.
           </div>
         )}
-      </div>
+      </motion.div> // Close main content motion.div
     </div>
   );
 };
