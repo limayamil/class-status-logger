@@ -42,17 +42,21 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col bg-gray-50">
+    // Changed bg-gray-50 to bg-background
+    <div className="flex flex-col bg-background"> 
       <Navigation />
       
       <div className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Acceso Docente</h1>
-            <p className="text-gray-500 mt-2">Ingresa tus credenciales para continuar</p>
+            {/* Changed text-gray-800 to text-foreground */}
+            <h1 className="text-3xl font-bold text-foreground">Acceso Docente</h1> 
+            {/* Changed text-gray-500 to text-muted-foreground */}
+            <p className="text-muted-foreground mt-2">Ingresa tus credenciales para continuar</p> 
           </div>
           
-          <Card>
+          {/* Card should adapt automatically */}
+          <Card> 
             <CardHeader>
               <CardTitle>Acceso al sistema</CardTitle>
               <CardDescription>
@@ -103,10 +107,10 @@ const Login = () => {
             </CardFooter>
           </Card>
           
-          <div className="mt-4 text-center text-sm text-gray-500">
-            <p>Usuarios de demostración:</p>
-            <p className="font-medium">profesor@demo.com / password123</p>
-            <p className="font-medium">asistente@demo.com / password123</p>
+          {/* Updated demo user info and changed text-gray-500 to text-muted-foreground */}
+          <div className="mt-4 text-center text-sm text-muted-foreground"> 
+            <p>Usuario de demostración:</p>
+            <p className="font-medium">valentina@potato-lab.com / ARC1twar!</p>
           </div>
         </div>
       </div>

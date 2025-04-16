@@ -193,15 +193,19 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col bg-gray-50">
+    // Changed bg-gray-50 to bg-background
+    <div className="flex flex-col bg-background"> 
       <Navigation />
       
       <div className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Registro de Asistencia</h1>
-            <p className="text-brand-purple mt-2 capitalize">{currentDate}</p>
-            <p className="text-gray-500">{currentTime}</p>
+            {/* Changed text-gray-800 to text-foreground */}
+            <h1 className="text-3xl font-bold text-foreground">Registro de Asistencia</h1> 
+            {/* Kept text-brand-purple for now, can change to text-primary if needed */}
+            <p className="text-brand-purple mt-2 capitalize">{currentDate}</p> 
+            {/* Changed text-gray-500 to text-muted-foreground */}
+            <p className="text-muted-foreground">{currentTime}</p> 
           </div>
           
           <Card>
@@ -218,8 +222,9 @@ const Index = () => {
                     <Label htmlFor="name">Nombre y Apellido</Label>
                     {loading ? (
                       <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-sm text-gray-500">Cargando estudiantes...</span>
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" /> {/* Added text-primary to spinner */}
+                        {/* Changed text-gray-500 to text-muted-foreground */}
+                        <span className="text-sm text-muted-foreground">Cargando estudiantes...</span> 
                       </div>
                     ) : (
                       <Select 

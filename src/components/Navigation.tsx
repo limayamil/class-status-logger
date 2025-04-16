@@ -43,7 +43,7 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className="bg-card text-card-foreground shadow-sm border-b border-border"> {/* Changed bg-white to bg-card, added text-card-foreground and border */}
       <div className="container mx-auto">
         <div className="flex justify-between items-center p-4">
           <div className="flex items-center space-x-2">
@@ -60,9 +60,9 @@ const Navigation = () => {
                 to={item.path}
                 className={cn(
                   "flex items-center space-x-1 px-2 py-1 rounded-md transition-colors",
-                  location.pathname === item.path 
-                    ? "text-brand-purple font-medium" 
-                    : "text-gray-600 hover:text-brand-purple"
+                  location.pathname === item.path
+                    ? "text-primary font-medium" // Changed text-brand-purple to text-primary
+                    : "text-muted-foreground hover:text-primary" // Changed text-gray-600 to text-muted-foreground, hover:text-brand-purple to hover:text-primary
                 )}
               >
                 {item.icon}
@@ -73,20 +73,20 @@ const Navigation = () => {
 
           {/* Theme Toggle Switch */}
           <div className="flex items-center space-x-2">
-            <Sun className="h-[1.2rem] w-[1.2rem] text-gray-600 dark:text-gray-400" />
+            <Sun className="h-[1.2rem] w-[1.2rem] text-muted-foreground" /> {/* Changed text color */}
             <Switch
               id="theme-switch"
               checked={theme === 'dark'}
               onCheckedChange={toggleTheme}
               aria-label="Cambiar tema"
             />
-            <Moon className="h-[1.2rem] w-[1.2rem] text-gray-600 dark:text-gray-400" />
+            <Moon className="h-[1.2rem] w-[1.2rem] text-muted-foreground" /> {/* Changed text color */}
           </div>
         </div>
       </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-10"> {/* Changed bg-white to bg-card, border-gray-200 to border-border */}
         <div className="flex justify-around items-center">
           {navItems.map((item) => (
             <Link
@@ -94,9 +94,9 @@ const Navigation = () => {
               to={item.path}
               className={cn(
                 "flex flex-col items-center py-3 px-2",
-                location.pathname === item.path 
-                  ? "text-brand-purple" 
-                  : "text-gray-500"
+                location.pathname === item.path
+                  ? "text-primary" // Changed text-brand-purple to text-primary
+                  : "text-muted-foreground" // Changed text-gray-500 to text-muted-foreground
               )}
             >
               {item.icon}

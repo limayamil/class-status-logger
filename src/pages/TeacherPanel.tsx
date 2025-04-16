@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label'; // Added missing import
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
@@ -184,13 +185,16 @@ const TeacherPanel = () => {
     : attendanceRecords;
 
   return (
-    <div className="flex flex-col bg-gray-50">
+    // Changed bg-gray-50 to bg-background
+    <div className="flex flex-col bg-background"> 
       <Navigation />
       
       <div className="flex-1 container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Panel Docente</h1>
-          <p className="text-brand-purple mt-2">Bienvenido, {user?.name}</p>
+          {/* Changed text-gray-800 to text-foreground */}
+          <h1 className="text-3xl font-bold text-foreground">Panel Docente</h1> 
+          {/* Changed text-brand-purple to text-primary */}
+          <p className="text-primary mt-2">Bienvenido, {user?.name}</p> 
         </div>
 
         <Tabs defaultValue="attendance" className="w-full">
@@ -202,9 +206,10 @@ const TeacherPanel = () => {
           {/* Attendance Tab */}
           <TabsContent value="attendance" className="space-y-4">
             {/* Header card with summary */}
-            <Card className="shadow-md">
+            {/* Card component should adapt automatically via CSS variables */}
+            <Card className="shadow-md"> 
               <CardHeader className="pb-3">
-                <CardTitle>Asistencia del día</CardTitle>
+                <CardTitle>Asistencia del día</CardTitle> 
                 <CardDescription>
                   {date === new Date().toISOString().split('T')[0] ? 'Registros de hoy' : `Registros de ${new Date(date).toLocaleDateString('es-ES', { dateStyle: 'long' })}`}
                 </CardDescription>
@@ -212,21 +217,26 @@ const TeacherPanel = () => {
               <CardContent>
                 <div className="flex flex-wrap gap-4 items-center justify-between">
                   <div className="flex items-center">
-                    <Calendar className="w-12 h-12 text-brand-purple mr-3" />
+                    {/* Changed text-brand-purple to text-primary */}
+                    <Calendar className="w-12 h-12 text-primary mr-3" /> 
                     <div>
                       <div className="text-3xl font-bold">
-                        {attendanceRecords.length} <span className="text-lg font-medium text-gray-500">/ 150</span>
+                        {/* Changed text-gray-500 to text-muted-foreground */}
+                        {attendanceRecords.length} <span className="text-lg font-medium text-muted-foreground">/ 150</span> 
                       </div>
-                      <div className="text-sm text-gray-500">estudiantes presentes</div>
+                      {/* Changed text-gray-500 to text-muted-foreground */}
+                      <div className="text-sm text-muted-foreground">estudiantes presentes</div> 
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-4">
                     <div className="flex-none">
-                      <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                      {/* Label component should adapt */}
+                      <Label htmlFor="date" className="block text-sm font-medium mb-1"> 
                         Fecha
-                      </label>
-                      <Input
+                      </Label>
+                      {/* Input component should adapt */}
+                      <Input 
                         id="date"
                         type="date"
                         value={date}
@@ -283,9 +293,11 @@ const TeacherPanel = () => {
                 <CardTitle>Listado de asistencia</CardTitle>
                 <div className="mt-2">
                   <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                    <Input
-                      placeholder="Buscar por nombre..." // Actualizar placeholder
+                    {/* Changed text-gray-500 to text-muted-foreground */}
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /> 
+                    {/* Input component should adapt */}
+                    <Input 
+                      placeholder="Buscar por nombre..." 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9"
@@ -296,25 +308,32 @@ const TeacherPanel = () => {
               <CardContent>
                 {loading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+                    {/* Changed text-brand-purple to text-primary */}
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" /> 
                   </div>
                 ) : filteredRecords.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[400px] border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Nombre</th>
+                        {/* Changed border-gray-200 to border-border */}
+                        <tr className="border-b border-border"> 
+                          {/* Changed text-gray-500 to text-muted-foreground */}
+                          <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Nombre</th> 
                           {/* <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">DNI</th> */} {/* Columna DNI eliminada */}
-                          <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Hora</th>
+                          {/* Changed text-gray-500 to text-muted-foreground */}
+                          <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Hora</th> 
                         </tr>
                       </thead>
                       <tbody>
                         {filteredRecords.map((record, index) => (
                           // Usar _id si existe, sino el índice como fallback para la key
-                          <tr key={record._id || index} className="border-b border-gray-100">
-                            <td className="py-3 px-4 text-gray-800">{record.studentName}</td>
+                          // Changed border-gray-100 to border-border/10 for a lighter border
+                          <tr key={record._id || index} className="border-b border-border/10"> 
+                            {/* Changed text-gray-800 to text-foreground */}
+                            <td className="py-3 px-4 text-foreground">{record.studentName}</td> 
                             {/* <td className="py-3 px-4 text-gray-800">{record.dni}</td> */} {/* Celda DNI eliminada */}
-                            <td className="py-3 px-4 text-gray-600">
+                            {/* Changed text-gray-600 to text-muted-foreground */}
+                            <td className="py-3 px-4 text-muted-foreground"> 
                               {/* Asegurarse de que timestamp es un string ISO válido antes de crear Date */}
                               {record.timestamp ? new Date(record.timestamp).toLocaleTimeString('es-ES', {
                                 hour: '2-digit',
@@ -327,7 +346,8 @@ const TeacherPanel = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  // Changed text-gray-500 to text-muted-foreground
+                  <div className="text-center py-8 text-muted-foreground"> 
                     {searchTerm ? 'No se encontraron estudiantes que coincidan con la búsqueda' : 'No hay registros de asistencia para esta fecha'}
                   </div>
                 )}
@@ -361,7 +381,8 @@ const TeacherPanel = () => {
 
             {statsLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="h-12 w-12 animate-spin text-brand-purple" />
+                {/* Changed text-brand-purple to text-primary */}
+                <Loader2 className="h-12 w-12 animate-spin text-primary" /> 
               </div>
             ) : stats ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -372,19 +393,29 @@ const TeacherPanel = () => {
                       <CardTitle className="text-base font-medium">Asistencia Diaria</CardTitle>
                       <CardDescription>Últimos 7 días</CardDescription>
                     </div>
-                    <Calendar className="h-4 w-4 text-gray-500" />
+                    {/* Changed text-gray-500 to text-muted-foreground */}
+                    <Calendar className="h-4 w-4 text-muted-foreground" /> 
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
+                        {/* Added theme-aware props to Recharts */}
                         <BarChart data={stats.dailyStats}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
                           <XAxis 
                             dataKey="date" 
+                            stroke="hsl(var(--muted-foreground))" 
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
                             tickFormatter={(tick) => new Date(tick).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                           />
-                          <YAxis />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
                           <RechartsTooltip 
+                            cursor={{ fill: 'hsl(var(--accent))' }} 
+                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
+                            itemStyle={{ color: 'hsl(var(--foreground))' }}
                             formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
                             labelFormatter={(label: string) => new Date(label).toLocaleDateString('es-ES', { 
                               weekday: 'long',
@@ -392,7 +423,8 @@ const TeacherPanel = () => {
                               month: 'long'
                             })}
                           />
-                          <Bar dataKey="count" fill="#9b87f5" radius={[4, 4, 0, 0]} />
+                          {/* Changed fill to use primary color variable */}
+                          <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -406,30 +438,41 @@ const TeacherPanel = () => {
                       <CardTitle className="text-base font-medium">Asistencia Semanal</CardTitle>
                       <CardDescription>Últimas 4 semanas</CardDescription>
                     </div>
-                    <BarChart3 className="h-4 w-4 text-gray-500" />
+                    {/* Changed text-gray-500 to text-muted-foreground */}
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" /> 
                   </CardHeader>
                   <CardContent>
                     <div className="h-[200px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
+                        {/* Added theme-aware props to Recharts */}
                         <BarChart data={stats.weeklyStats}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
                           <XAxis
-                            dataKey="weekStartDate" // Usar el nuevo campo
+                            dataKey="weekStartDate" 
+                            stroke="hsl(var(--muted-foreground))" 
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
                             tickFormatter={(tick) => {
                               // Formatear la fecha de inicio de semana
                               const date = new Date(tick + 'T00:00:00'); // Asegurar que se interprete como local
                               return `Sem ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' })}`;
                             }}
                           />
-                          <YAxis />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
                           <RechartsTooltip
+                            cursor={{ fill: 'hsl(var(--accent))' }} 
+                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
+                            itemStyle={{ color: 'hsl(var(--foreground))' }}
                             formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
                             labelFormatter={(label: string) => `Semana del ${new Date(label + 'T00:00:00').toLocaleDateString('es-ES', {
                               day: 'numeric',
                               month: 'long'
                             })}`}
                           />
-                          <Bar dataKey="count" fill="#7E69AB" radius={[4, 4, 0, 0]} />
+                          {/* Changed fill to use a secondary-like color (adjust if needed) */}
+                          <Bar dataKey="count" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} /> 
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -443,22 +486,32 @@ const TeacherPanel = () => {
                       <CardTitle className="text-base font-medium">Asistencia Mensual</CardTitle>
                       <CardDescription>Últimos 3 meses</CardDescription>
                     </div>
-                    <BarChart3 className="h-4 w-4 text-gray-500" />
+                    {/* Changed text-gray-500 to text-muted-foreground */}
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" /> 
                   </CardHeader>
                   <CardContent>
                     <div className="h-[200px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
+                        {/* Added theme-aware props to Recharts */}
                         <BarChart data={stats.monthlyStats}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
                           <XAxis 
                             dataKey="month" 
+                            stroke="hsl(var(--muted-foreground))" 
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
                             tickFormatter={(tick) => {
                               const [year, month] = tick.split('-');
                               return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { month: 'short' });
                             }}
                           />
-                          <YAxis />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
                           <RechartsTooltip 
+                            cursor={{ fill: 'hsl(var(--accent))' }} 
+                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
+                            itemStyle={{ color: 'hsl(var(--foreground))' }}
                             formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
                             labelFormatter={(label: string) => {
                               const [year, month] = label.split('-');
@@ -468,7 +521,8 @@ const TeacherPanel = () => {
                               });
                             }}
                           />
-                          <Bar dataKey="count" fill="#6E59A5" radius={[4, 4, 0, 0]} />
+                          {/* Changed fill to use a muted-like color (adjust if needed) */}
+                          <Bar dataKey="count" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} /> 
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -482,24 +536,31 @@ const TeacherPanel = () => {
                       <CardTitle className="text-base font-medium">Asistencia por Estudiante</CardTitle>
                       <CardDescription>Estudiantes con menor asistencia</CardDescription>
                     </div>
-                    <Users className="h-4 w-4 text-gray-500" />
+                    {/* Changed text-gray-500 to text-muted-foreground */}
+                    <Users className="h-4 w-4 text-muted-foreground" /> 
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
                       <table className="w-full border-collapse min-w-[600px]">
                         <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estudiante</th>
-                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Asistencias (últ. 30 días)</th>
+                          {/* Changed border-gray-200 to border-border */}
+                          <tr className="border-b border-border"> 
+                            {/* Changed text-gray-500 to text-muted-foreground */}
+                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Estudiante</th> 
+                            {/* Changed text-gray-500 to text-muted-foreground */}
+                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Asistencias (últ. 30 días)</th> 
                             {/* <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">Estado</th> */} {/* Columna Estado eliminada */}
                           </tr>
                         </thead>
                         <tbody>
                           {/* Mostrar los 15 estudiantes con menos asistencias */}
                           {stats.studentStats.slice(0, 15).map((student, index) => (
-                            <tr key={student.studentName + index} className="border-b border-gray-100"> {/* Usar nombre + índice como key */}
-                              <td className="py-3 px-4 text-gray-800">{student.studentName}</td>
-                              <td className="py-3 px-4 text-center text-gray-800">{student.attendanceCount}</td>
+                            // Changed border-gray-100 to border-border/10
+                            <tr key={student.studentName + index} className="border-b border-border/10"> 
+                              {/* Changed text-gray-800 to text-foreground */}
+                              <td className="py-3 px-4 text-foreground">{student.studentName}</td> 
+                              {/* Changed text-gray-800 to text-foreground */}
+                              <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td> 
                               {/* Celda Estado eliminada */}
                             </tr>
                           ))}
@@ -510,7 +571,8 @@ const TeacherPanel = () => {
                 </Card>
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              // Changed text-gray-500 to text-muted-foreground
+              <div className="text-center py-12 text-muted-foreground"> 
                 No se pudieron cargar las estadísticas.
               </div>
             )}
