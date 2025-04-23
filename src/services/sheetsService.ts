@@ -174,7 +174,7 @@ export const sheetsService = {
       }
       
       MOCK_ATTENDANCE[today].push(newRecord);
-      toast.success("Cambios guardados correctamente");
+      toast.success("¡Gracias por usar AsistenciaUNI!");
       return true;
     } catch (error) {
       console.error("Error al enviar datos al webhook:", error);
