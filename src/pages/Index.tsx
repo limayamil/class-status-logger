@@ -10,18 +10,25 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
 // Definir variantes de animación fuera del componente
 const sectionVariants = {
@@ -50,6 +57,7 @@ const Index = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [openCombobox, setOpenCombobox] = useState(false);
 
   // Get students on component mount
   useEffect(() => {
@@ -88,10 +96,6 @@ const Index = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const handleStudentChange = (value: string) => {
-    setSelectedStudent(value);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -119,7 +123,6 @@ const Index = () => {
 
       let mongoAttempted = false;
       let mongoSuccess = false;
-      // let sheetsSuccess = false; // No se usa directamente para lógica condicional aquí
       let duplicateDetected = false;
 
       // --- Inicio: Llamada a MongoDB (Principal y Validación) ---
@@ -182,7 +185,6 @@ const Index = () => {
             student.name,
             dni
           );
-          // sheetsSuccess = true; // Marcamos éxito de Sheets
           console.log("Backup en Google Sheets realizado.");
         } catch (sheetsError) {
           toast.warning("Asistencia guardada, pero falló el backup en Google Sheets."); // Usar warning ya que lo principal funcionó
@@ -236,65 +238,96 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nombre y Apellido</Label>
-                    {loading ? (
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" /> {/* Added text-primary to spinner */}
-                        {/* Changed text-gray-500 to text-muted-foreground */}
-                        <span className="text-sm text-muted-foreground">Cargando estudiantes...</span>
-                      </div>
-                    ) : (
-                      <Select
-                        value={selectedStudent}
-                        onValueChange={handleStudentChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona tu nombre" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80">
-                          {students.map(student => (
-                            <SelectItem key={student.id} value={student.id}>
-                              {student.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dni">DNI</Label>
-                    <Input
-                      id="dni"
-                      type="number"
-                      value={dni}
-                      onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Ingresa tu DNI"
-                      required
-                    />
-                  </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre y Apellido</Label>
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" /> {/* Added text-primary to spinner */}
+                      {/* Changed text-gray-500 to text-muted-foreground */}
+                      <span className="text-sm text-muted-foreground">Cargando estudiantes...</span>
+                    </div>
+                  ) : (
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openCombobox}
+                          className="w-full justify-between"
+                          disabled={students.length === 0}
+                        >
+                          {selectedStudent
+                            ? students.find((student) => student.id === selectedStudent)?.name
+                            : "Selecciona tu nombre..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0">
+                        <Command>
+                          <CommandInput placeholder="Busca tu nombre..." />
+                          <CommandList>
+                            <CommandEmpty>No se encontró el estudiante.</CommandEmpty>
+                            <CommandGroup>
+                              {students.map((student) => (
+                                <CommandItem
+                                  key={student.id}
+                                  value={student.name}
+                                  onSelect={(currentValue) => {
+                                    const matchedStudent = students.find(s => s.name.toLowerCase() === currentValue.toLowerCase());
+                                    setSelectedStudent(matchedStudent ? matchedStudent.id : "");
+                                    setOpenCombobox(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedStudent === student.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {student.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dni">DNI</Label>
+                  <Input
+                    id="dni"
+                    type="text"
+                    value={dni}
+                    onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ingresa tu DNI"
+                    required
+                    inputMode="numeric"
+                    pattern="\d*"
+                  />
+                </div>
+
+                <CardFooter className="p-0 pt-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={submitting || !selectedStudent || !dni || loading}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Registrando...
+                      </>
+                    ) : (
+                      'Estoy Presente'
+                    )}
+                  </Button>
+                </CardFooter>
               </form>
             </CardContent>
-            <CardFooter>
-              <Button
-                className="w-full"
-                onClick={handleSubmit}
-                disabled={submitting || !selectedStudent || !dni}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Registrando...
-                  </>
-                ) : (
-                  'Estoy Presente'
-                )}
-              </Button>
-            </CardFooter>
           </Card>
         </div>
       </motion.div> {/* Etiqueta de cierre correcta */}
