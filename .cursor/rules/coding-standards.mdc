@@ -54,3 +54,4 @@ alwaysApply: false
 - Implementar reintentos para operaciones críticas
 - Mantener consistencia en el formato de respuestas API
 
+

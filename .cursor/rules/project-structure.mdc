@@ -39,3 +39,4 @@ Este es un sistema de registro de asistencia para el Taller de Medios, construid
 - [tsconfig.json](mdc:tsconfig.json) - Configuración de TypeScript
 - [package.json](mdc:package.json) - Dependencias y scripts
 
+

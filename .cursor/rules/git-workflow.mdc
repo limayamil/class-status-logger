@@ -54,3 +54,4 @@ El [.gitignore](mdc:.gitignore) está configurado para excluir:
 - `.DS_Store` y archivos de sistema
 - Logs y archivos temporales
 
+
