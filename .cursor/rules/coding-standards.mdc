@@ -1,0 +1,56 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Estándares de Código
+
+## Guías de TypeScript
+- Usar TypeScript para todo el código nuevo
+- Definir interfaces explícitas para props y estados
+- Evitar el tipo `any` - usar tipos específicos
+- Usar interfaces para objetos y type para uniones/intersecciones
+- Documentar funciones y componentes complejos
+
+## Estructura de Componentes
+- Un componente por archivo
+- Usar componentes funcionales con hooks
+- Interfaces de props deben nombrarse `{ComponentName}Props`
+- Mantener componentes enfocados y con responsabilidad única
+- Extraer lógica reutilizable en custom hooks
+- Usar Framer Motion para animaciones
+
+## Convenciones de Nombres
+- Componentes: PascalCase (ej. `UserProfile.tsx`)
+- Hooks: camelCase con prefijo `use` (ej. `useAuth.ts`)
+- Utilidades: camelCase (ej. `formatDate.ts`)
+- Funciones serverless: kebab-case (ej. `registrar-asistencia.ts`)
+- Interfaces: PascalCase con sufijo descriptivo (ej. `StudentData`)
+
+## Gestión de Estado
+- Usar React Context para estado global (tema, autenticación)
+- Preferir estado local con `useState` para estado de componentes
+- Usar `useReducer` para lógica de estado compleja
+- Mantener la lógica de estado cerca de donde se usa
+
+## Estilos
+- Usar clases de Tailwind CSS para estilos
+- Seguir diseño responsive mobile-first
+- Usar variables CSS para temas dark/light
+- Mantener consistencia con el sistema de diseño shadcn/ui
+- Usar `cn()` para combinar clases condicionales
+
+## Manejo de Errores y Datos
+- Usar try-catch para operaciones asíncronas
+- Proporcionar mensajes de error significativos usando toast
+- Manejar estados de carga y casos límite
+- Validar datos de entrada en el cliente y servidor
+- Usar tipos estrictos para datos de MongoDB
+
+## Integración con Servicios
+- Usar funciones serverless de Netlify para operaciones de backend
+- Centralizar la lógica de servicios en archivos dedicados
+- Manejar errores de red y timeout apropiadamente
+- Implementar reintentos para operaciones críticas
+- Mantener consistencia en el formato de respuestas API
+

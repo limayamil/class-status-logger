@@ -1,0 +1,56 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Flujo de Trabajo Git
+
+## Ramas
+- Feature: `feature/descripcion-funcionalidad`
+- Correcciones: `fix/descripcion-error`
+- Hotfixes: `hotfix/descripcion`
+- Releases: `release/version`
+
+## Mensajes de Commit
+- Comenzar con verbo en imperativo
+- Mantener primera línea bajo 50 caracteres
+- Añadir descripción detallada después de línea en blanco
+- Referenciar números de issue cuando aplique
+- Usar emojis para categorizar cambios
+
+Ejemplo:
+```
+✨ Añadir sistema de autenticación docente
+
+- Implementar formulario de login
+- Agregar manejo de tokens JWT
+- Configurar rutas protegidas
+- Integrar con MongoDB
+```
+
+## Categorías de Commit
+- ✨ (sparkles) - Nueva funcionalidad
+- 🐛 (bug) - Corrección de errores
+- 📝 (memo) - Documentación
+- 💄 (lipstick) - UI/Estilos
+- ♻️ (recycle) - Refactorización
+- 🔧 (wrench) - Configuración
+- 🚀 (rocket) - Performance
+- 🔒 (lock) - Seguridad
+
+## Pull Requests
+- Mantener PRs enfocados y pequeños
+- Incluir descripción clara de cambios
+- Vincular issues relacionados
+- Actualizar documentación si es necesario
+- Asegurar que todos los tests pasen
+- Solicitar revisión del equipo docente
+
+## Archivos Ignorados
+El [.gitignore](mdc:.gitignore) está configurado para excluir:
+- `node_modules/` y dependencias
+- `.env` y archivos de ambiente
+- `dist/` y archivos de build
+- `.DS_Store` y archivos de sistema
+- Logs y archivos temporales
+

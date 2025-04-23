@@ -269,8 +269,9 @@ const Index = () => {
                     <Label htmlFor="dni">DNI</Label>
                     <Input
                       id="dni"
+                      type="number"
                       value={dni}
-                      onChange={(e) => setDni(e.target.value)}
+                      onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
                       placeholder="Ingresa tu DNI"
                       required
                     />

@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Project Structure Guide
+
+Este es un sistema de registro de asistencia para el Taller de Medios, construido con React, TypeScript, y Vite. Utiliza MongoDB para almacenamiento persistente y servicios serverless de Netlify.
+
+## Core Files
+- [src/main.tsx](mdc:src/main.tsx) - Punto de entrada de la aplicación
+- [src/App.tsx](mdc:src/App.tsx) - Componente raíz y enrutamiento
+- [src/pages/Index.tsx](mdc:src/pages/Index.tsx) - Página principal de registro de asistencia
+- [src/pages/Login.tsx](mdc:src/pages/Login.tsx) - Página de autenticación docente
+
+## Servicios y Datos
+- [src/services/sheetsService.ts](mdc:src/services/sheetsService.ts) - Servicio principal de gestión de asistencias
+- [src/services/mongoService.ts](mdc:src/services/mongoService.ts) - Conexión y operaciones con MongoDB
+- [src/services/estudiantesData.ts](mdc:src/services/estudiantesData.ts) - Gestión de datos de estudiantes
+- [listado_completo_nombres.json](mdc:listado_completo_nombres.json) - Base de datos local de estudiantes
+
+## Funciones Serverless
+- [netlify/functions/registrar-asistencia.ts](mdc:netlify/functions/registrar-asistencia.ts) - Endpoint para registrar asistencia
+- [netlify/functions/get-asistencias.ts](mdc:netlify/functions/get-asistencias.ts) - Endpoint para consultar asistencias
+- [netlify/functions/get-statistics.ts](mdc:netlify/functions/get-statistics.ts) - Endpoint para estadísticas
+
+## Estructura de Directorios
+- `src/components/` - Componentes React reutilizables y UI
+- `src/pages/` - Páginas principales de la aplicación
+- `src/services/` - Servicios de datos y lógica de negocio
+- `src/hooks/` - Custom hooks de React
+- `src/context/` - Contextos de React (Auth, Theme)
+- `src/lib/` - Utilidades y funciones auxiliares
+- `netlify/functions/` - Funciones serverless
+
+## Configuración
+- [vite.config.ts](mdc:vite.config.ts) - Configuración de Vite
+- [tailwind.config.ts](mdc:tailwind.config.ts) - Configuración de Tailwind CSS
+- [tsconfig.json](mdc:tsconfig.json) - Configuración de TypeScript
+- [package.json](mdc:package.json) - Dependencias y scripts
+
