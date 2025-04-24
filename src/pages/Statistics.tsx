@@ -23,7 +23,6 @@ interface StatsServiceResponse {
   weeklyStats: { week: string; count: number }[];
   monthlyStats: { month: string; count: number }[];
   studentStats: { studentId: string; studentName: string; attendedClassesCount: number }[];
-  totalClassesHeld?: number;
 }
 
 interface StatisticsData {
@@ -59,13 +58,17 @@ const Statistics = () => {
   const fetchStatistics = async () => {
     setLoading(true);
     try {
-      const data: StatsServiceResponse = await sheetsService.getStatistics();
+      // Obtener estadísticas del servicio mock
+      const mockData: StatsServiceResponse = await sheetsService.getStatistics();
+      
+      // Obtener el contador real de clases
+      const totalClassesHeld = await classesService.getTotalClassesHeld();
       
       setStats({
-        weeklyStats: data.weeklyStats || [],
-        monthlyStats: data.monthlyStats || [],
-        studentStats: data.studentStats || [],
-        totalClassesHeld: data.totalClassesHeld || 0,
+        weeklyStats: mockData.weeklyStats || [],
+        monthlyStats: mockData.monthlyStats || [],
+        studentStats: mockData.studentStats || [],
+        totalClassesHeld: totalClassesHeld, // Usar el contador real
       });
     } catch (error) {
       toast.error('Error al cargar las estadísticas');
