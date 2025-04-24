@@ -17,10 +17,12 @@ let db: Db | null = null;
 async function connectToDatabase(): Promise<Db> {
   // Si ya tenemos una instancia de Db, la conexión está activa (o el driver la manejará)
   if (db) {
+    console.log('Reutilizando conexión existente a MongoDB');
     return db;
   }
 
   try {
+    console.log('Creando nueva conexión a MongoDB...');
     client = new MongoClient(uri, {
       // Opciones recomendadas por MongoDB Atlas
       // useNewUrlParser: true, // Deprecado en versiones recientes del driver
@@ -33,12 +35,16 @@ async function connectToDatabase(): Promise<Db> {
 
     // Selecciona la base de datos. Puedes cambiar 'asistenciasDB' si lo deseas.
     db = client.db('asistenciasDB');
+    console.log('Base de datos seleccionada:', db.databaseName);
     return db;
   } catch (error) {
-    console.error('Error al conectar con MongoDB:', error);
+    console.error('Error detallado al conectar con MongoDB:', error);
     // Si la conexión falla, asegúrate de cerrar el cliente si se inicializó
     if (client) {
+      console.log('Cerrando conexión fallida...');
       await client.close();
+      client = null;
+      db = null;
     }
     throw error; // Relanza el error para que la función que llama lo maneje
   }
@@ -50,8 +56,11 @@ async function connectToDatabase(): Promise<Db> {
  * @returns Una instancia de la colección.
  */
 async function getCollection<T>(collectionName: string): Promise<Collection<T>> {
+  console.log('Solicitando colección:', collectionName);
   const database = await connectToDatabase();
-  return database.collection<T>(collectionName);
+  const collection = database.collection<T>(collectionName);
+  console.log('Colección obtenida:', collectionName);
+  return collection;
 }
 
 // Exporta las funciones que necesitarás

@@ -18,6 +18,8 @@ const jsonHeaders: { [header: string]: string | number | boolean } = {
 };
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+  console.log('get-class-count function called with method:', event.httpMethod);
+  
   // Verificar MongoDB URI
   if (!process.env.MONGODB_URI) {
     console.error('Error: MONGODB_URI no está configurada.');
@@ -29,14 +31,19 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   }
 
   try {
+    console.log('Intentando conectar a MongoDB...');
     const configCollection = await getCollection<ConfigDocument>(COLLECTION_NAME);
+    console.log('Conexión a MongoDB establecida');
     
     // --- GET: Obtener valor actual del contador ---
     if (event.httpMethod === "GET") {
+      console.log('Buscando documento de configuración...');
       // Buscar o crear el documento de configuración
       let config = await configCollection.findOne({ configKey: CONFIG_KEY });
+      console.log('Resultado de búsqueda:', config);
       
       if (!config) {
+        console.log('Documento no encontrado, creando uno nuevo...');
         // Si no existe el documento, lo creamos con valor inicial 0
         const initialConfig: ConfigDocument = {
           configKey: CONFIG_KEY,
@@ -51,73 +58,68 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       }
       
       // Asegurarnos de que totalClassesHeld sea un número
-      const count = config && typeof config.totalClassesHeld === 'number' ? config.totalClassesHeld : 0;
+      const totalClasses = typeof config.totalClassesHeld === 'number' ? config.totalClassesHeld : 0;
+      console.log('Total de clases:', totalClasses);
       
       return {
         statusCode: 200,
         headers: jsonHeaders,
-        body: JSON.stringify({ totalClassesHeld: count }),
+        body: JSON.stringify({ totalClassesHeld: totalClasses })
       };
     }
     
     // --- POST: Incrementar el contador ---
     if (event.httpMethod === "POST") {
-      let incrementAmount = 1;
-
-      if (event.body) {
-        try {
-          const body = JSON.parse(event.body);
-          if (typeof body.increment === 'number' && body.increment > 0) {
-            incrementAmount = body.increment;
-          }
-        } catch (e) {
-          console.warn('Error al parsear el cuerpo de la solicitud, usando incremento predeterminado');
-        }
-      }
-
-      // Usar findOneAndUpdate para obtener el valor actualizado en una sola operación
+      console.log('Incrementando contador de clases...');
+      
+      // Buscar y actualizar el documento en una sola operación atómica
       const result = await configCollection.findOneAndUpdate(
         { configKey: CONFIG_KEY },
         { 
-          $inc: { totalClassesHeld: incrementAmount },
+          $inc: { totalClassesHeld: 1 },
           $set: { updatedAt: new Date() }
         },
         { 
-          upsert: true,
-          returnDocument: 'after'
+          upsert: true, // Crear si no existe
+          returnDocument: 'after' // Devolver el documento actualizado
         }
       );
-
-      const newCount = result?.totalClassesHeld ?? incrementAmount;
-
+      
+      if (!result) {
+        console.error('Error: No se pudo actualizar el contador');
+        return {
+          statusCode: 500,
+          headers: jsonHeaders,
+          body: JSON.stringify({ message: "Error al actualizar el contador de clases." })
+        };
+      }
+      
+      const updatedCount = result.totalClassesHeld ?? 1;
+      console.log('Documento actualizado, nuevo contador:', updatedCount);
+      
       return {
         statusCode: 200,
         headers: jsonHeaders,
         body: JSON.stringify({ 
-          message: "Contador de clases actualizado correctamente",
-          totalClassesHeld: newCount,
-          updated: true
-        }),
+          totalClassesHeld: updatedCount,
+          message: "Contador incrementado correctamente."
+        })
       };
     }
-
-    // Método no permitido
-    return { 
-      statusCode: 405, 
-      headers: { ...jsonHeaders, "Allow": "GET, POST" }, 
-      body: JSON.stringify({ message: "Método no permitido. Solo se aceptan GET y POST." }) 
+    
+    // --- Método no permitido ---
+    return {
+      statusCode: 405,
+      headers: { ...jsonHeaders, "Allow": "GET, POST" },
+      body: JSON.stringify({ message: "Método no permitido." })
     };
-
-  } catch (error: unknown) {
-    let errorMessage = "Error desconocido.";
-    if (error instanceof Error) {
-        errorMessage = `Error: ${error.message}`;
-    }
-    console.error(errorMessage, error);
-    return { 
-      statusCode: 500, 
-      headers: jsonHeaders, 
-      body: JSON.stringify({ message: errorMessage }) 
+    
+  } catch (error) {
+    console.error('Error en get-class-count:', error);
+    return {
+      statusCode: 500,
+      headers: jsonHeaders,
+      body: JSON.stringify({ message: "Error interno del servidor." })
     };
   }
 };
