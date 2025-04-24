@@ -2,12 +2,12 @@ import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import { ObjectId } from 'mongodb';
 import { getCollection } from "../../src/services/mongoService";
 
-// Interfaz para el documento de configuración que almacena el contador de clases
+// Interfaz para el documento de configuración (alineada con MongoDB)
 interface ConfigDocument {
   _id?: ObjectId | string;
-  key: string; // Identificador único para este valor de configuración
-  value: number; // El valor del contador
-  updatedAt: Date; // Última vez que se actualizó
+  configKey: string; // <-- Asegúrate que sea configKey
+  totalClassesHeld: number; // <-- Asegúrate que sea totalClassesHeld
+  updatedAt?: Date; 
 }
 
 const COLLECTION_NAME = 'configs';
@@ -33,10 +33,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     
     // --- GET: Obtener valor actual del contador ---
     if (event.httpMethod === "GET") {
-      const config = await configCollection.findOne({ configKey: CONFIG_KEY });
-      
-      // Si no existe, devolvemos 0 como valor predeterminado
-      const count = config ? config.value : 0;
+      // Busca usando configKey
+      const config = await configCollection.findOne({ configKey: CONFIG_KEY }); 
+      // Obtiene el valor del campo totalClassesHeld
+      const count = config ? config.totalClassesHeld : 0; 
       
       return {
         statusCode: 200,
@@ -64,19 +64,21 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         }
       }
 
-      // Actualizar el contador usando $inc para operación atómica, con upsert para crearlo si no existe
+      // Actualizar usando configKey para encontrar el doc
+      // Incrementar el campo totalClassesHeld
       const result = await configCollection.updateOne(
-        { key: CONFIG_KEY },
+        { configKey: CONFIG_KEY }, 
         { 
-          $inc: { value: incrementAmount },
-          $set: { updatedAt: new Date() }
+          $inc: { totalClassesHeld: incrementAmount }, // <-- Incrementar totalClassesHeld
+          $set: { updatedAt: new Date() } 
         },
         { upsert: true }
       );
 
-      // Leer el valor actualizado para devolverlo en la respuesta
-      const updatedConfig = await configCollection.findOne({ key: CONFIG_KEY });
-      const newCount = updatedConfig ? updatedConfig.value : incrementAmount; // Fallback si no se puede leer
+      // Leer el valor actualizado buscando con configKey
+      const updatedConfig = await configCollection.findOne({ configKey: CONFIG_KEY });
+      // Obtener el valor del campo totalClassesHeld
+      const newCount = updatedConfig ? updatedConfig.totalClassesHeld : incrementAmount; 
 
       return {
         statusCode: 200,

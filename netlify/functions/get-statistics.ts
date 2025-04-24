@@ -13,12 +13,12 @@ interface AsistenciaDocument {
   registradoEn: Date; // Marca de tiempo del servidor
 }
 
-// Interfaz para el documento de configuración
+// Interfaz para el documento de configuración (alineada con MongoDB)
 interface ConfigDocument {
   _id?: ObjectId | string;
-  key: string;
-  value: number;
-  updatedAt: Date;
+  configKey: string;
+  totalClassesHeld: number;
+  updatedAt?: Date;
 }
 
 // Interfaz para la respuesta de la función
@@ -32,8 +32,8 @@ interface StatisticsResponse {
 }
 
 const COLLECTION_NAME = 'asistencias';
-const CONFIG_COLLECTION = 'config';
-const CONFIG_KEY = 'totalClassesHeld';
+const CONFIG_COLLECTION = 'configs';
+const CONFIG_KEY = 'classSettings';
 
 const jsonHeaders: { [header: string]: string | number | boolean } = {
   'Content-Type': 'application/json'
@@ -65,8 +65,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     today.setHours(0, 0, 0, 0); // Normalizar a inicio del día
 
     // --- Obtener totalClassesHeld de la colección de configuración ---
-    const configDoc = await configCollection.findOne({ key: CONFIG_KEY });
-    const totalClassesHeld = configDoc ? configDoc.value : 0; // Si no existe, usamos 0 como valor predeterminado
+    const configDoc = await configCollection.findOne({ configKey: CONFIG_KEY });
+    const totalClassesHeld = configDoc ? configDoc.totalClassesHeld : 0;
 
     // --- Calcular Estadísticas Diarias (Últimos 7 días) ---
     const sevenDaysAgo = new Date(today);
@@ -153,7 +153,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       weeklyStats,
       monthlyStats,
       studentStats: combinedStudentStats, // Use the combined stats
-      totalClassesHeld // Añadimos el total de clases impartidas
+      totalClassesHeld // Usa el valor corregido
     };
 
     return {
