@@ -302,7 +302,7 @@ const TeacherPanel = () => {
                     <div>
                       <div className="text-3xl font-bold">
                         {/* Changed text-gray-500 to text-muted-foreground */}
-                        {attendanceRecords.length} <span className="text-lg font-medium text-muted-foreground">/ 150</span> 
+                        {attendanceRecords.length} <span className="text-lg font-medium text-muted-foreground">/ 141</span> 
                       </div>
                       {/* Changed text-gray-500 to text-muted-foreground */}
                       <div className="text-sm text-muted-foreground">estudiantes presentes</div> 
