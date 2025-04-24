@@ -49,6 +49,15 @@ interface StatisticsData {
   studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[]; 
 }
 
+// Helper function to get today's date in YYYY-MM-DD format based on local time
+const getTodayLocalISOString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const TeacherPanel = () => {
   const [date, setDate] = useState(() => {
     const today = new Date();
@@ -246,7 +255,11 @@ const TeacherPanel = () => {
                   <CardHeader className="pb-3">
                     <CardTitle>Asistencia del día</CardTitle>
                 <CardDescription>
-                  {date === new Date().toISOString().split('T')[0] ? 'Registros de hoy' : `Registros de ${new Date(date).toLocaleDateString('es-ES', { dateStyle: 'long' })}`}
+                  {/* Compara con la fecha local formateada */}
+                  {date === getTodayLocalISOString() 
+                    ? 'Registros de hoy' 
+                    // Añade 'T00:00:00' para interpretar la fecha como local al formatear
+                    : `Registros de ${new Date(date + 'T00:00:00').toLocaleDateString('es-ES', { dateStyle: 'long' })}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -404,264 +417,264 @@ const TeacherPanel = () => {
               <div className="flex justify-between items-center mb-8">
                 <CardTitle>Estadísticas de Asistencia</CardTitle>
               
-              <Button 
-                variant="outline" 
-                onClick={handleExportStatsToPDF}
-                disabled={statsLoading || exportingPDF}
-              >
-                {exportingPDF ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Exportando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Exportar estadísticas
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {statsLoading ? (
-              <div className="flex justify-center py-12">
-                {/* Changed text-brand-purple to text-primary */}
-                <Loader2 className="h-12 w-12 animate-spin text-primary" /> 
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportStatsToPDF}
+                  disabled={statsLoading || exportingPDF}
+                >
+                  {exportingPDF ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Exportando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Exportar estadísticas
+                    </>
+                  )}
+                </Button>
               </div>
-            ) : stats ? (
-              // Apply itemVariants to each card in the grid
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {/* Daily Attendance Card */}
-                <motion.div variants={itemVariants} className="col-span-full md:col-span-2 lg:col-span-2"> {/* Wrap Card */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <div className="space-y-1">
-                      <CardTitle className="text-base font-medium">Asistencia Diaria</CardTitle>
-                      <CardDescription>Últimos 7 días</CardDescription>
-                    </div>
-                    {/* Changed text-gray-500 to text-muted-foreground */}
-                    <Calendar className="h-4 w-4 text-muted-foreground" /> 
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        {/* Added theme-aware props to Recharts */}
-                        <BarChart data={stats.dailyStats}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
-                          <XAxis 
-                            dataKey="date" 
-                            stroke="hsl(var(--muted-foreground))" 
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(tick) => new Date(tick).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                          />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
-                          <RechartsTooltip 
-                            cursor={{ fill: 'hsl(var(--accent))' }} 
-                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
-                            labelStyle={{ color: 'hsl(var(--foreground))' }}
-                            itemStyle={{ color: 'hsl(var(--foreground))' }}
-                            formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: string) => new Date(label).toLocaleDateString('es-ES', { 
-                              weekday: 'long',
-                              day: 'numeric', 
-                              month: 'long'
-                            })}
-                          />
-                          {/* Changed fill to use primary color variable */}
-                          <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
-                        </BarChart>
-                      </ResponsiveContainer>
+
+              {statsLoading ? (
+                <div className="flex justify-center py-12">
+                  {/* Changed text-brand-purple to text-primary */}
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" /> 
+                </div>
+              ) : stats ? (
+                // Apply itemVariants to each card in the grid
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {/* Daily Attendance Card */}
+                  <motion.div variants={itemVariants} className="col-span-full md:col-span-2 lg:col-span-2"> {/* Wrap Card */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div className="space-y-1">
+                        <CardTitle className="text-base font-medium">Asistencia Diaria</CardTitle>
+                        <CardDescription>Últimos 7 días</CardDescription>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                      {/* Changed text-gray-500 to text-muted-foreground */}
+                      <Calendar className="h-4 w-4 text-muted-foreground" /> 
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          {/* Added theme-aware props to Recharts */}
+                          <BarChart data={stats.dailyStats}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
+                            <XAxis 
+                              dataKey="date" 
+                              stroke="hsl(var(--muted-foreground))" 
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(tick) => new Date(tick + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                            />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
+                            <RechartsTooltip 
+                              cursor={{ fill: 'hsl(var(--accent))' }} 
+                              contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
+                              itemStyle={{ color: 'hsl(var(--foreground))' }}
+                              formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                              labelFormatter={(label: string) => new Date(label + 'T00:00:00').toLocaleDateString('es-ES', { 
+                                weekday: 'long',
+                                day: 'numeric', 
+                                month: 'long'
+                              })}
+                            />
+                            {/* Changed fill to use primary color variable */}
+                            <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
+                          </BarChart>
+                        </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
-                {/* Weekly Stats */}
-                <motion.div variants={itemVariants}> {/* Wrap Card */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <div className="space-y-1">
-                      <CardTitle className="text-base font-medium">Asistencia Semanal</CardTitle>
-                      <CardDescription>Últimas 4 semanas</CardDescription>
-                    </div>
-                    {/* Changed text-gray-500 to text-muted-foreground */}
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" /> 
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[200px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        {/* Added theme-aware props to Recharts */}
-                        <BarChart data={stats.weeklyStats}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
-                          <XAxis
-                            dataKey="weekStartDate" 
-                            stroke="hsl(var(--muted-foreground))" 
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(tick) => {
-                              // Formatear la fecha de inicio de semana
-                              const date = new Date(tick + 'T00:00:00'); // Asegurar que se interprete como local
-                              return `Sem ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' })}`;
-                            }}
-                          />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
-                          <RechartsTooltip
-                            cursor={{ fill: 'hsl(var(--accent))' }} 
-                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
-                            labelStyle={{ color: 'hsl(var(--foreground))' }}
-                            itemStyle={{ color: 'hsl(var(--foreground))' }}
-                            formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: string) => `Semana del ${new Date(label + 'T00:00:00').toLocaleDateString('es-ES', {
-                              day: 'numeric',
-                              month: 'long'
-                            })}`}
-                          />
-                          {/* Changed fill to use a secondary-like color (adjust if needed) */}
-                          <Bar dataKey="count" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} /> 
-                        </BarChart>
-                      </ResponsiveContainer>
+                  {/* Weekly Stats */}
+                  <motion.div variants={itemVariants}> {/* Wrap Card */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div className="space-y-1">
+                        <CardTitle className="text-base font-medium">Asistencia Semanal</CardTitle>
+                        <CardDescription>Últimas 4 semanas</CardDescription>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                      {/* Changed text-gray-500 to text-muted-foreground */}
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" /> 
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          {/* Added theme-aware props to Recharts */}
+                          <BarChart data={stats.weeklyStats}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
+                            <XAxis
+                              dataKey="weekStartDate" 
+                              stroke="hsl(var(--muted-foreground))" 
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(tick) => {
+                                // Formatear la fecha de inicio de semana
+                                const date = new Date(tick + 'T00:00:00'); // Asegurar que se interprete como local
+                                return `Sem ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' })}`;
+                              }}
+                            />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
+                            <RechartsTooltip
+                              cursor={{ fill: 'hsl(var(--accent))' }} 
+                              contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
+                              itemStyle={{ color: 'hsl(var(--foreground))' }}
+                              formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                              labelFormatter={(label: string) => `Semana del ${new Date(label + 'T00:00:00').toLocaleDateString('es-ES', {
+                                day: 'numeric',
+                                month: 'long'
+                              })}`}
+                            />
+                            {/* Changed fill to use a secondary-like color (adjust if needed) */}
+                            <Bar dataKey="count" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} /> 
+                          </BarChart>
+                        </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
-                {/* Monthly Stats */}
-                <motion.div variants={itemVariants}> {/* Wrap Card */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <div className="space-y-1">
-                      <CardTitle className="text-base font-medium">Asistencia Mensual</CardTitle>
-                      <CardDescription>Últimos 3 meses</CardDescription>
-                    </div>
-                    {/* Changed text-gray-500 to text-muted-foreground */}
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" /> 
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[200px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        {/* Added theme-aware props to Recharts */}
-                        <BarChart data={stats.monthlyStats}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
-                          <XAxis 
-                            dataKey="month" 
-                            stroke="hsl(var(--muted-foreground))" 
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(tick) => {
-                              const [year, month] = tick.split('-');
-                              return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { month: 'short' });
-                            }}
-                          />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
-                          <RechartsTooltip 
-                            cursor={{ fill: 'hsl(var(--accent))' }} 
-                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
-                            labelStyle={{ color: 'hsl(var(--foreground))' }}
-                            itemStyle={{ color: 'hsl(var(--foreground))' }}
-                            formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
-                            labelFormatter={(label: string) => {
-                              const [year, month] = label.split('-');
-                              return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { 
-                                month: 'long',
-                                year: 'numeric'
-                              });
-                            }}
-                          />
-                          {/* Changed fill to use a muted-like color (adjust if needed) */}
-                          <Bar dataKey="count" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} /> 
-                        </BarChart>
-                      </ResponsiveContainer>
+                  {/* Monthly Stats */}
+                  <motion.div variants={itemVariants}> {/* Wrap Card */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div className="space-y-1">
+                        <CardTitle className="text-base font-medium">Asistencia Mensual</CardTitle>
+                        <CardDescription>Últimos 3 meses</CardDescription>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                      {/* Changed text-gray-500 to text-muted-foreground */}
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" /> 
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          {/* Added theme-aware props to Recharts */}
+                          <BarChart data={stats.monthlyStats}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /> 
+                            <XAxis 
+                              dataKey="month" 
+                              stroke="hsl(var(--muted-foreground))" 
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(tick) => {
+                                const [year, month] = tick.split('-');
+                                return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { month: 'short' });
+                              }}
+                            />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} /> 
+                            <RechartsTooltip 
+                              cursor={{ fill: 'hsl(var(--accent))' }} 
+                              contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
+                              itemStyle={{ color: 'hsl(var(--foreground))' }}
+                              formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                              labelFormatter={(label: string) => {
+                                const [year, month] = label.split('-');
+                                return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { 
+                                  month: 'long',
+                                  year: 'numeric'
+                                });
+                              }}
+                            />
+                            {/* Changed fill to use a muted-like color (adjust if needed) */}
+                            <Bar dataKey="count" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} /> 
+                          </BarChart>
+                        </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
-                {/* Student Attendance List */}
-                <motion.div variants={itemVariants} className="col-span-full"> {/* Wrap Card */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <div className="space-y-1">
-                      <CardTitle className="text-base font-medium">Asistencia por Estudiante</CardTitle>
-                      <CardDescription>Estudiantes con menor asistencia</CardDescription>
-                    </div>
-                    {/* Changed text-gray-500 to text-muted-foreground */}
-                    <Users className="h-4 w-4 text-muted-foreground" /> 
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse min-w-[600px]">
-                        <thead>
-                          {/* Changed border-gray-200 to border-border */}
-                          <tr className="border-b border-border"> 
-                            {/* Changed text-gray-500 to text-muted-foreground */}
-                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Estudiante</th>
-                            {/* Add Regularidad header */}
-                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Regularidad</th>
-                            {/* Add Progreso header */}
-                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Progreso</th>
-                            {/* Changed text-gray-500 to text-muted-foreground */}
-                            <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Asistencias (últ. 30 días)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Mostrar los 15 estudiantes con menos asistencias */}
-                          {stats.studentStats.slice(0, 15).map((student, index) => {
-                            // Calculate temporary percentage based on total presence
-                            const hasAttended = student.totalAttendanceCount > 0;
-                            const tempPercentage = hasAttended ? 100 : 0;
-                            const progressBarClass = `h-2.5 rounded-full ${hasAttended ? 'bg-green-500' : 'bg-red-500'}`;
-                            const progressWidth = `${tempPercentage}%`;
+                  {/* Student Attendance List */}
+                  <motion.div variants={itemVariants} className="col-span-full"> {/* Wrap Card */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div className="space-y-1">
+                        <CardTitle className="text-base font-medium">Asistencia por Estudiante</CardTitle>
+                        <CardDescription>Estudiantes con menor asistencia</CardDescription>
+                      </div>
+                      {/* Changed text-gray-500 to text-muted-foreground */}
+                      <Users className="h-4 w-4 text-muted-foreground" /> 
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse min-w-[600px]">
+                          <thead>
+                            {/* Changed border-gray-200 to border-border */}
+                            <tr className="border-b border-border"> 
+                              {/* Changed text-gray-500 to text-muted-foreground */}
+                              <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Estudiante</th>
+                              {/* Add Regularidad header */}
+                              <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Regularidad</th>
+                              {/* Add Progreso header */}
+                              <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Progreso</th>
+                              {/* Changed text-gray-500 to text-muted-foreground */}
+                              <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Asistencias (últ. 30 días)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Mostrar los 15 estudiantes con menos asistencias */}
+                            {stats.studentStats.slice(0, 15).map((student, index) => {
+                              // Calculate temporary percentage based on total presence
+                              const hasAttended = student.totalAttendanceCount > 0;
+                              const tempPercentage = hasAttended ? 100 : 0;
+                              const progressBarClass = `h-2.5 rounded-full ${hasAttended ? 'bg-green-500' : 'bg-red-500'}`;
+                              const progressWidth = `${tempPercentage}%`;
 
-                            return (
-                              <tr key={student.studentName + index} className="border-b border-border/10">
-                                {/* Changed text-gray-800 to text-foreground */}
-                                <td className="py-3 px-4 text-foreground">{student.studentName}</td>
-                                {/* Add Regularidad data cell */}
-                                <td className="py-3 px-4 text-center text-muted-foreground">
-                                  {student.totalAttendanceCount} / 23
-                                </td>
-                                {/* Add Progreso data cell */}
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center">
-                                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700"> {/* Added dark mode bg */}
-                                      <div
-                                        className={progressBarClass}
-                                        style={{ width: progressWidth }}
-                                      ></div>
+                              return (
+                                <tr key={student.studentName + index} className="border-b border-border/10">
+                                  {/* Changed text-gray-800 to text-foreground */}
+                                  <td className="py-3 px-4 text-foreground">{student.studentName}</td>
+                                  {/* Add Regularidad data cell */}
+                                  <td className="py-3 px-4 text-center text-muted-foreground">
+                                    {student.totalAttendanceCount} / 23
+                                  </td>
+                                  {/* Add Progreso data cell */}
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center">
+                                      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700"> {/* Added dark mode bg */}
+                                        <div
+                                          className={progressBarClass}
+                                          style={{ width: progressWidth }}
+                                        ></div>
+                                      </div>
+                                      <span className="ml-2 text-sm text-muted-foreground">
+                                        {tempPercentage}%
+                                      </span>
                                     </div>
-                                    <span className="ml-2 text-sm text-muted-foreground">
-                                      {tempPercentage}%
-                                    </span>
-                                  </div>
-                                </td>
-                                {/* Changed text-gray-800 to text-foreground */}
-                                <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </div>
-            ) : (
-              // Changed text-gray-500 to text-muted-foreground
-              <div className="text-center py-12 text-muted-foreground"> 
-                No se pudieron cargar las estadísticas.
-              </div>
-            )}
-            </TabsContent>
-          </motion.div>
-        </Tabs>
-      </motion.div> {/* Close main content motion.div */}
-    </div>
-  );
+                                  </td>
+                                  {/* Changed text-gray-800 to text-foreground */}
+                                  <td className="py-3 px-4 text-center text-foreground">{student.attendanceCount}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </div>
+              ) : (
+                // Changed text-gray-500 to text-muted-foreground
+                <div className="text-center py-12 text-muted-foreground"> 
+                  No se pudieron cargar las estadísticas.
+                </div>
+              )}
+              </TabsContent>
+            </motion.div>
+          </Tabs>
+        </motion.div> {/* Close main content motion.div */}
+      </div>
+    );
 };
 
 export default TeacherPanel;
