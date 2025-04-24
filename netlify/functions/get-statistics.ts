@@ -13,6 +13,14 @@ interface AsistenciaDocument {
   registradoEn: Date; // Marca de tiempo del servidor
 }
 
+// Interfaz para el documento de configuración
+interface ConfigDocument {
+  _id?: ObjectId | string;
+  key: string;
+  value: number;
+  updatedAt: Date;
+}
+
 // Interfaz para la respuesta de la función
 interface StatisticsResponse {
   dailyStats: { date: string; count: number }[];
@@ -20,9 +28,13 @@ interface StatisticsResponse {
   monthlyStats: { month: string; count: number }[]; // Formato YYYY-MM
   // Update studentStats to include total attendance count
   studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[];
+  totalClassesHeld: number; // Total de clases impartidas
 }
 
 const COLLECTION_NAME = 'asistencias';
+const CONFIG_COLLECTION = 'config';
+const CONFIG_KEY = 'totalClassesHeld';
+
 const jsonHeaders: { [header: string]: string | number | boolean } = {
   'Content-Type': 'application/json'
 };
@@ -47,8 +59,14 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   try {
     const asistenciasCollection = await getCollection<AsistenciaDocument>(COLLECTION_NAME);
+    const configCollection = await getCollection<ConfigDocument>(CONFIG_COLLECTION);
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalizar a inicio del día
+
+    // --- Obtener totalClassesHeld de la colección de configuración ---
+    const configDoc = await configCollection.findOne({ key: CONFIG_KEY });
+    const totalClassesHeld = configDoc ? configDoc.value : 0; // Si no existe, usamos 0 como valor predeterminado
 
     // --- Calcular Estadísticas Diarias (Últimos 7 días) ---
     const sevenDaysAgo = new Date(today);
@@ -129,12 +147,13 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     }));
 
 
-    // --- Ensamblar Respuesta ---
+    // --- Ensamblar Respuesta (Ahora incluye totalClassesHeld) ---
     const responseData: StatisticsResponse = {
       dailyStats,
       weeklyStats,
       monthlyStats,
-      studentStats: combinedStudentStats // Use the combined stats
+      studentStats: combinedStudentStats, // Use the combined stats
+      totalClassesHeld // Añadimos el total de clases impartidas
     };
 
     return {
