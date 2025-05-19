@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { classesService } from '@/services/classesService';
+
+const STUDENTS_PER_PAGE = 10; // Define STUDENTS_PER_PAGE here
 
 // Interfaz adaptada a los datos de MongoDB
 interface AttendanceRecord {
@@ -80,6 +82,10 @@ const TeacherPanel = () => {
   const [exportingPDF, setExportingPDF] = useState(false);
   // Añadir estado para actualizar clases
   const [updatingClasses, setUpdatingClasses] = useState(false);
+
+  // Added state for student table in Statistics tab
+  const [statsStudentSearchTerm, setStatsStudentSearchTerm] = useState('');
+  const [statsStudentTablePage, setStatsStudentTablePage] = useState(1);
 
   // --- Animation Variants ---
   const containerVariants = {
@@ -245,6 +251,25 @@ const TeacherPanel = () => {
         record.studentName.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : attendanceRecords;
+
+  // Memoized calculations for student table in Statistics tab
+  const filteredAndSortedStatsStudentStats = useMemo(() => {
+    if (!stats?.studentStats) return [];
+    return stats.studentStats
+      .filter(student => 
+        student.studentName.toLowerCase().includes(statsStudentSearchTerm.toLowerCase())
+      )
+      .sort((a, b) => a.studentName.localeCompare(b.studentName));
+  }, [stats?.studentStats, statsStudentSearchTerm]);
+
+  const paginatedStatsStudentStats = useMemo(() => {
+    const startIndex = (statsStudentTablePage - 1) * STUDENTS_PER_PAGE;
+    return filteredAndSortedStatsStudentStats.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
+  }, [filteredAndSortedStatsStudentStats, statsStudentTablePage]);
+
+  const totalStatsStudentTablePages = useMemo(() => {
+    return Math.ceil(filteredAndSortedStatsStudentStats.length / STUDENTS_PER_PAGE);
+  }, [filteredAndSortedStatsStudentStats.length]);
 
   return (
     // Changed bg-gray-50 to bg-background
@@ -623,6 +648,19 @@ const TeacherPanel = () => {
                       <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
+                      {/* Added Search Input for Student Table in Stats Tab */}
+                      <div className="mb-4">
+                        <Input 
+                          placeholder="Buscar estudiante por nombre..."
+                          value={statsStudentSearchTerm}
+                          onChange={(e) => {
+                            setStatsStudentSearchTerm(e.target.value);
+                            setStatsStudentTablePage(1); // Reset to first page on new search
+                          }}
+                          className="max-w-sm"
+                        />
+                      </div>
+
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse min-w-[600px]">
                           <thead>
@@ -633,9 +671,10 @@ const TeacherPanel = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {stats.studentStats
-                              .sort((a, b) => (a.totalAttendanceCount / stats.totalClassesHeld) - (b.totalAttendanceCount / stats.totalClassesHeld))
-                              .slice(0, 15)
+                            {paginatedStatsStudentStats.length > 0 ? (
+                              paginatedStatsStudentStats
+                              // .sort((a, b) => (a.totalAttendanceCount / stats.totalClassesHeld) - (b.totalAttendanceCount / stats.totalClassesHeld)) // Removed original sort
+                              // .slice(0, 15) // Removed original slice
                               .map((student, index) => {
                                 // Calcular porcentaje real basado en totalClassesHeld
                                 const attendancePercentage = stats.totalClassesHeld > 0 
@@ -670,10 +709,41 @@ const TeacherPanel = () => {
                                     </td>
                                   </tr>
                                 );
-                              })}
+                              })
+                            ) : (
+                              <tr>
+                                <td colSpan={3} className="py-4 px-4 text-center text-muted-foreground">
+                                  {statsStudentSearchTerm ? 'No se encontraron estudiantes con ese nombre.' : 'No hay datos de estudiantes.'}
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                         </div>
+                        {/* Added Pagination Controls for Stats Student Table */}
+                        {filteredAndSortedStatsStudentStats.length > STUDENTS_PER_PAGE && (
+                          <div className="flex justify-end items-center mt-4 space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setStatsStudentTablePage(prev => Math.max(1, prev - 1))}
+                              disabled={statsStudentTablePage === 1}
+                            >
+                              Anterior
+                            </Button>
+                            <span className="text-sm text-gray-700">
+                              Página {statsStudentTablePage} de {totalStatsStudentTablePages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setStatsStudentTablePage(prev => Math.min(totalStatsStudentTablePages, prev + 1))}
+                              disabled={statsStudentTablePage === totalStatsStudentTablePages}
+                            >
+                              Siguiente
+                            </Button>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>
