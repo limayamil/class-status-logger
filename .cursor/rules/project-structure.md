@@ -1,8 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: false
----
 # Project Structure Guide
 
 Este es un sistema de registro de asistencia para el Taller de Medios, construido con React, TypeScript, y Vite. Utiliza MongoDB para almacenamiento persistente y servicios serverless de Netlify.
@@ -12,6 +7,8 @@ Este es un sistema de registro de asistencia para el Taller de Medios, construid
 - [src/App.tsx](mdc:src/App.tsx) - Componente raíz y enrutamiento
 - [src/pages/Index.tsx](mdc:src/pages/Index.tsx) - Página principal de registro de asistencia
 - [src/pages/Login.tsx](mdc:src/pages/Login.tsx) - Página de autenticación docente
+- [src/pages/Statistics.tsx](mdc:src/pages/Statistics.tsx) - Página de estadísticas de asistencia para docentes
+- [src/pages/TeacherPanel.tsx](mdc:src/pages/TeacherPanel.tsx) - Panel principal para docentes: gestión y consulta de asistencias y estadísticas
 
 ## Servicios y Datos
 - [src/services/sheetsService.ts](mdc:src/services/sheetsService.ts) - Servicio principal de gestión de asistencias
@@ -37,6 +34,4 @@ Este es un sistema de registro de asistencia para el Taller de Medios, construid
 - [vite.config.ts](mdc:vite.config.ts) - Configuración de Vite
 - [tailwind.config.ts](mdc:tailwind.config.ts) - Configuración de Tailwind CSS
 - [tsconfig.json](mdc:tsconfig.json) - Configuración de TypeScript
-- [package.json](mdc:package.json) - Dependencias y scripts
-
-
+- [package.json](mdc:package.json) - Dependencias y scripts 

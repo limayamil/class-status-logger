@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { sheetsService } from '@/services/sheetsService';
 import { classesService } from '@/services/classesService';
 import Navigation from '@/components/Navigation';
@@ -32,12 +33,17 @@ interface StatisticsData {
   totalClassesHeld: number;
 }
 
+const STUDENTS_PER_PAGE = 10;
+
 const Statistics = () => {
   const [stats, setStats] = useState<StatisticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [updatingClasses, setUpdatingClasses] = useState(false);
   const { user } = useAuth();
+
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [studentTablePage, setStudentTablePage] = useState(1);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -118,6 +124,24 @@ const Statistics = () => {
   };
 
   const overallAttendanceRate = stats ? calculateOverallAttendanceRate() : 0;
+
+  const filteredAndSortedStudentStats = useMemo(() => {
+    if (!stats?.studentStats) return [];
+    return stats.studentStats
+      .filter(student => 
+        student.studentName.toLowerCase().includes(studentSearchTerm.toLowerCase())
+      )
+      .sort((a, b) => a.studentName.localeCompare(b.studentName));
+  }, [stats?.studentStats, studentSearchTerm]);
+
+  const paginatedStudentStats = useMemo(() => {
+    const startIndex = (studentTablePage - 1) * STUDENTS_PER_PAGE;
+    return filteredAndSortedStudentStats.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
+  }, [filteredAndSortedStudentStats, studentTablePage]);
+
+  const totalStudentTablePages = useMemo(() => {
+    return Math.ceil(filteredAndSortedStudentStats.length / STUDENTS_PER_PAGE);
+  }, [filteredAndSortedStudentStats.length]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -296,6 +320,18 @@ const Statistics = () => {
                 <Users className="h-4 w-4 text-gray-500" />
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Input 
+                    placeholder="Buscar estudiante por nombre..."
+                    value={studentSearchTerm}
+                    onChange={(e) => {
+                      setStudentSearchTerm(e.target.value);
+                      setStudentTablePage(1);
+                    }}
+                    className="max-w-sm"
+                  />
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse min-w-[600px]">
                     <thead>
@@ -306,9 +342,8 @@ const Statistics = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.studentStats
-                        .sort((a, b) => (a.attendedClassesCount / stats.totalClassesHeld) - (b.attendedClassesCount / stats.totalClassesHeld))
-                        .slice(0, 15)
+                      {paginatedStudentStats.length > 0 ? (
+                        paginatedStudentStats
                         .map((student) => {
                           const attendancePercentage = stats.totalClassesHeld > 0 
                             ? (student.attendedClassesCount / stats.totalClassesHeld) * 100 
@@ -341,10 +376,40 @@ const Statistics = () => {
                               </td>
                             </tr>
                           );
-                        })}
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="py-4 px-4 text-center text-gray-500">
+                            {studentSearchTerm ? 'No se encontraron estudiantes con ese nombre.' : 'No hay datos de estudiantes.'}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                   </div>
+                  {filteredAndSortedStudentStats.length > STUDENTS_PER_PAGE && (
+                    <div className="flex justify-end items-center mt-4 space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStudentTablePage(prev => Math.max(1, prev - 1))}
+                        disabled={studentTablePage === 1}
+                      >
+                        Anterior
+                      </Button>
+                      <span className="text-sm text-gray-700">
+                        Página {studentTablePage} de {totalStudentTablePages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStudentTablePage(prev => Math.min(totalStudentTablePages, prev + 1))}
+                        disabled={studentTablePage === totalStudentTablePages}
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
