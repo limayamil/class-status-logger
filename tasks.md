@@ -12,6 +12,7 @@
 - [x] **Filter by Student Name**: Add an input field to filter the student list by name.
 - [x] **Display All Students & Paginate**: Modify the table to show all students and implement pagination for easier navigation.
 - [x] **Default Sort Order**: Change the default sorting of students to be alphabetical by name.
+- [ ] **Detailed Attendance Dates per Student**: In the 'Asistencia por Estudiante' table within the Statistics tab, allow users to click on a student to view a list of all dates they attended.
 
 ## Progress Notes:
 

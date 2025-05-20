@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,13 @@ interface AsistenciaDocumentFromAPI {
   registradoEn: string; // La fecha vendrá como string ISO
 }
 
+// Nueva interfaz para los detalles de asistencia de un estudiante específico
+// interface StudentAttendanceDetail extends AsistenciaDocumentFromAPI {
+//   // No necesita campos adicionales por ahora, pero la mantenemos por claridad
+// }
+// Convertida a type alias para resolver linter warning
+type StudentAttendanceDetail = AsistenciaDocumentFromAPI;
+
 // Interfaz adaptada a la respuesta de get-statistics.ts
 interface StatisticsData {
   dailyStats: { date: string; count: number }[];
@@ -86,6 +94,11 @@ const TeacherPanel = () => {
   // Added state for student table in Statistics tab
   const [statsStudentSearchTerm, setStatsStudentSearchTerm] = useState('');
   const [statsStudentTablePage, setStatsStudentTablePage] = useState(1);
+
+  // State for selected student and their detailed attendance
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [studentAttendanceDetails, setStudentAttendanceDetails] = useState<StudentAttendanceDetail[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // --- Animation Variants ---
   const containerVariants = {
@@ -270,6 +283,48 @@ const TeacherPanel = () => {
   const totalStatsStudentTablePages = useMemo(() => {
     return Math.ceil(filteredAndSortedStatsStudentStats.length / STUDENTS_PER_PAGE);
   }, [filteredAndSortedStatsStudentStats.length]);
+
+  // Nueva función para obtener detalles de asistencia de un estudiante
+  const fetchStudentAttendanceDetails = async (studentName: string) => {
+    if (selectedStudent === studentName) { // Si ya está seleccionado, lo deseleccionamos (toggle)
+      setSelectedStudent(null);
+      setStudentAttendanceDetails([]);
+      return;
+    }
+
+    setSelectedStudent(studentName);
+    setDetailsLoading(true);
+    setStudentAttendanceDetails([]); // Limpiar detalles anteriores
+
+    try {
+      // Llamar a la función Netlify con el nombre del estudiante
+      // No necesitamos 'date' aquí, ya que queremos todos los registros del estudiante
+      const response = await fetch(`/.netlify/functions/get-asistencias?studentName=${encodeURIComponent(studentName)}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
+        throw new Error(errorData.message || `Error ${response.status} al obtener detalles de asistencia`);
+      }
+
+      const details: StudentAttendanceDetail[] = await response.json();
+      
+      // Ordenar por fecha descendente para mostrar las más recientes primero
+      details.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      
+      setStudentAttendanceDetails(details);
+
+    } catch (error: unknown) {
+      let errorMessage = "Error al cargar los detalles de asistencia del estudiante";
+       if (error instanceof Error) {
+          errorMessage = `Error al cargar detalles: ${error.message}`;
+       }
+      toast.error(errorMessage);
+      console.error(error);
+      setSelectedStudent(null); // Deseleccionar en caso de error
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   return (
     // Changed bg-gray-50 to bg-background
@@ -673,43 +728,92 @@ const TeacherPanel = () => {
                           <tbody>
                             {paginatedStatsStudentStats.length > 0 ? (
                               paginatedStatsStudentStats
-                              // .sort((a, b) => (a.totalAttendanceCount / stats.totalClassesHeld) - (b.totalAttendanceCount / stats.totalClassesHeld)) // Removed original sort
-                              // .slice(0, 15) // Removed original slice
-                              .map((student, index) => {
-                                // Calcular porcentaje real basado en totalClassesHeld
-                                const attendancePercentage = stats.totalClassesHeld > 0 
-                                  ? (student.totalAttendanceCount / stats.totalClassesHeld) * 100 
-                                  : 0;
-                                
-                                // Determinar color de la barra de progreso según el porcentaje
-                                const progressBarColor = attendancePercentage >= 75 ? 'bg-green-500' 
-                                                       : attendancePercentage >= 50 ? 'bg-yellow-500' 
-                                                       : 'bg-red-500';
-                                const progressBarClass = `h-2.5 rounded-full ${progressBarColor}`;
-                                const progressWidth = `${attendancePercentage}%`;
+                                .map((student, index) => {
+                                  const studentKey = student.studentName + index; // Clave única para la fila principal
+                                  const isSelected = selectedStudent === student.studentName;
+                                  // Calcular porcentaje real basado en totalClassesHeld
+                                  const attendancePercentage = stats.totalClassesHeld > 0 
+                                    ? (student.totalAttendanceCount / stats.totalClassesHeld) * 100 
+                                    : 0;
+                                  
+                                  // Determinar color de la barra de progreso según el porcentaje
+                                  const progressBarColor = attendancePercentage >= 75 ? 'bg-green-500' 
+                                                         : attendancePercentage >= 50 ? 'bg-yellow-500' 
+                                                         : 'bg-red-500';
+                                  const progressBarClass = `h-2.5 rounded-full ${progressBarColor}`;
+                                  const progressWidth = `${attendancePercentage}%`;
 
-                                return (
-                                  <tr key={student.studentName + index} className="border-b border-border/10 hover:bg-accent/5">
-                                    <td className="py-3 px-4 text-foreground">{student.studentName}</td>
-                                    <td className="py-3 px-4 text-muted-foreground">
-                                      {student.totalAttendanceCount} / {stats.totalClassesHeld}
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      <div className="flex items-center">
-                                        <div className="w-full bg-accent/20 rounded-full h-2.5 mr-2">
-                                          <div
-                                            className={progressBarClass}
-                                            style={{ width: progressWidth }}
-                                          ></div>
-                                        </div>
-                                        <span className="text-sm text-muted-foreground font-medium w-10 text-right">
-                                          {attendancePercentage.toFixed(0)}%
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })
+                                  return (
+                                    // Usamos React.Fragment para poder tener múltiples elementos raíz por fila
+                                    <React.Fragment key={studentKey}>
+                                      <tr 
+                                        className={`border-b border-border/10 hover:bg-accent/10 cursor-pointer ${isSelected ? 'bg-accent/20' : ''}`}
+                                        onClick={() => fetchStudentAttendanceDetails(student.studentName)}
+                                      >
+                                        <td className="py-3 px-4 text-foreground">{student.studentName}</td>
+                                        <td className="py-3 px-4 text-muted-foreground">
+                                          {student.totalAttendanceCount} / {stats.totalClassesHeld}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <div className="flex items-center">
+                                            <div className="w-full bg-accent/20 rounded-full h-2.5 mr-2">
+                                              <div
+                                                className={progressBarClass}
+                                                style={{ width: progressWidth }}
+                                              ></div>
+                                            </div>
+                                            <span className="text-sm text-muted-foreground font-medium w-10 text-right">
+                                              {attendancePercentage.toFixed(0)}%
+                                            </span>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      {/* Fila de detalles (condicional) */}
+                                      {isSelected && (
+                                        <tr className="bg-accent/5">
+                                          <td colSpan={3} className="p-0"> {/* p-0 para que la tarjeta interna ocupe todo el espacio */}
+                                            <motion.div
+                                              initial={{ opacity: 0, height: 0 }}
+                                              animate={{ opacity: 1, height: 'auto' }}
+                                              exit={{ opacity: 0, height: 0 }}
+                                              transition={{ duration: 0.3 }}
+                                              className="p-4" // Añadimos padding aquí
+                                            >
+                                              {detailsLoading ? (
+                                                <div className="flex items-center justify-center py-4">
+                                                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                                  <span className="ml-2 text-muted-foreground">Cargando fechas...</span>
+                                                </div>
+                                              ) : studentAttendanceDetails.length > 0 ? (
+                                                <div>
+                                                  <h4 className="text-sm font-semibold mb-2 text-foreground">
+                                                    Fechas de asistencia para {selectedStudent}:
+                                                  </h4>
+                                                  <ul className="list-disc list-inside space-y-1 max-h-40 overflow-y-auto pr-2">
+                                                    {studentAttendanceDetails.map((detail) => (
+                                                      <li key={detail._id || detail.registradoEn} className="text-xs text-muted-foreground">
+                                                        {new Date(detail.fecha + 'T00:00:00').toLocaleDateString('es-ES', { 
+                                                          year: 'numeric', month: 'long', day: 'numeric' 
+                                                        })}
+                                                        {' - '}
+                                                        <span className="text-green-600 font-medium">{detail.estado}</span>
+                                                        {` (Registrado: ${new Date(detail.registradoEn).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })})`}
+                                                      </li>
+                                                    ))}
+                                                  </ul>
+                                                </div>
+                                              ) : (
+                                                <p className="text-xs text-center text-muted-foreground py-3">
+                                                  No se encontraron registros de asistencia para este estudiante o no asistió.
+                                                </p>
+                                              )}
+                                            </motion.div>
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })
                             ) : (
                               <tr>
                                 <td colSpan={3} className="py-4 px-4 text-center text-muted-foreground">

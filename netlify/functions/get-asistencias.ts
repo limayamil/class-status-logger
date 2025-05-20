@@ -33,23 +33,26 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   // Obtener la fecha del query string
   const dateParam = event.queryStringParameters?.date;
+  const studentNameParam = event.queryStringParameters?.studentName;
 
-  if (!dateParam) {
+  if (!dateParam && !studentNameParam) {
     return {
       statusCode: 400, // Bad Request
       headers: jsonHeaders,
-      body: JSON.stringify({ message: "Falta el parámetro 'date' en la consulta (formato YYYY-MM-DD)." }),
+      body: JSON.stringify({ message: "Faltan los parámetros requeridos. Se necesita 'date' o 'studentName'." }),
     };
   }
 
-  // Validación simple del formato de fecha (YYYY-MM-DD)
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(dateParam)) {
-      return {
-          statusCode: 400,
-          headers: jsonHeaders,
-          body: JSON.stringify({ message: "Formato de fecha inválido. Use YYYY-MM-DD." }),
-      };
+  // Validación simple del formato de fecha (YYYY-MM-DD) si se proporciona dateParam
+  if (dateParam) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateParam)) {
+        return {
+            statusCode: 400,
+            headers: jsonHeaders,
+            body: JSON.stringify({ message: "Formato de fecha inválido. Use YYYY-MM-DD." }),
+        };
+    }
   }
 
   // Verificar que MONGODB_URI esté disponible
@@ -66,9 +69,18 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     // Obtener la colección de MongoDB
     const asistenciasCollection = await getCollection<AsistenciaDocument>(COLLECTION_NAME);
 
-    // Buscar los registros para la fecha especificada
+    // Construir el filtro dinámicamente
+    const filter: { fecha?: string; nombreEstudiante?: string } = {};
+    if (dateParam) {
+      filter.fecha = dateParam;
+    }
+    if (studentNameParam) {
+      filter.nombreEstudiante = studentNameParam;
+    }
+
+    // Buscar los registros para la fecha especificada y/o estudiante
     // Ordenamos por fecha de registro para que aparezcan en orden de llegada
-    const records = await asistenciasCollection.find({ fecha: dateParam }).sort({ registradoEn: 1 }).toArray();
+    const records = await asistenciasCollection.find(filter).sort({ registradoEn: 1 }).toArray();
 
     // Devolver los registros encontrados
     return {
