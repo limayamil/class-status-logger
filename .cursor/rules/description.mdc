@@ -1,0 +1,185 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 📋 Class Status Logger
+
+## 📑 Índice
+- [Descripción General](mdc:#descripción-general)
+- [Funcionalidades Principales](mdc:#funcionalidades-principales)
+- [Flujo de Usuario](mdc:#flujo-de-usuario)
+  - [Estudiantes](mdc:#estudiantes)
+  - [Docentes/Administradores](mdc:#docentesadministradores)
+- [Arquitectura Técnica](mdc:#arquitectura-técnica)
+- [Seguridad](mdc:#seguridad)
+
+## 🔍 Descripción General
+
+**Class Status Logger** es una aplicación web moderna diseñada para optimizar la gestión de asistencia estudiantil en entornos educativos. El sistema permite a los estudiantes registrar su presencia en clases de forma sencilla y a los docentes obtener información detallada sobre la asistencia a lo largo del tiempo.
+
+## ✨ Funcionalidades Principales
+
+### Para Estudiantes
+| Funcionalidad | Descripción |
+|---------------|-------------|
+| **Registro de Asistencia** | Interfaz intuitiva para marcar presencia diaria |
+| **Verificación de Identidad** | Validación mediante nombre y DNI |
+| **Prevención de Duplicados** | Sistema que evita múltiples registros en el mismo día |
+| **Confirmación Visual** | Feedback inmediato del registro exitoso |
+
+### Para Docentes
+| Funcionalidad | Descripción |
+|---------------|-------------|
+| **Panel Administrativo** | Vista completa de asistencias diarias |
+| **Análisis Estadístico** | Gráficos y métricas de participación |
+| **Exportación de Datos** | Opciones para exportar a PDF y Google Sheets |
+| **Gestión de Clases** | Control del contador de clases impartidas |
+| **Búsqueda Avanzada** | Filtrado de estudiantes y registros |
+
+## 👥 Flujo de Usuario
+
+### Estudiantes
+
+#### 1️⃣ Acceso a la Plataforma
+- El estudiante ingresa a la página principal (`/`)
+- El sistema muestra automáticamente la fecha y hora actual
+- La interfaz presenta un formulario de registro de asistencia
+
+#### 2️⃣ Registro de Asistencia
+- **Selección de identidad**:
+  - Elige su nombre de la lista desplegable de estudiantes
+  - Ingresa su DNI para verificación de identidad
+- **Proceso de validación**:
+  - El sistema verifica la correspondencia entre nombre y DNI
+  - Comprueba que no exista un registro previo del día
+  - Realiza el almacenamiento principal en MongoDB
+  - Crea respaldo automático en Google Sheets
+- **Confirmación**: 
+  - Muestra mensaje de confirmación con animación
+  - Proporciona notificaciones (toast) en caso de errores
+
+### Docentes/Administradores
+
+#### 1️⃣ Autenticación
+- Acceso al formulario de login (`/login`)
+- Ingreso de credenciales (email y contraseña)
+- Redirección automática al panel tras verificación exitosa
+
+#### 2️⃣ Panel de Control
+El panel docente está organizado en dos secciones principales:
+
+##### Pestaña de Asistencia
+- **Vista general**:
+  - Resumen de asistencia del día con contador
+  - Selector de fecha para consultar días anteriores
+- **Listado detallado**:
+  - Nombres de estudiantes presentes
+  - Hora exacta de registro
+  - Buscador por nombre
+- **Herramientas de exportación**:
+  - Botón para generar PDF
+  - Botón para exportar a Google Sheets
+
+##### Pestaña de Estadísticas
+- **Visualización gráfica**:
+  - Gráficos de barras para tendencias diarias
+  - Análisis semanal y mensual
+  - Porcentaje general de asistencia
+- **Datos por estudiante**:
+  - Lista con tasa individual de asistencia
+  - Opción para ver historial detallado por estudiante
+- **Gestión académica**:
+  - Contador de clases totales impartidas
+  - Botón para incrementar contador de clases
+  - Exportación de reportes estadísticos
+
+## 🔧 Arquitectura Técnica
+
+### Frontend
+```
+📦 Frontend
+ ┣ 📂 React + TypeScript
+ ┣ 📂 UI/UX
+ ┃ ┣ 📜 Tailwind CSS
+ ┃ ┣ 📜 shadcn/ui
+ ┃ ┗ 📜 Framer Motion (animaciones)
+ ┣ 📂 Estado y Datos
+ ┃ ┣ 📜 Context API (AuthContext)
+ ┃ ┗ 📜 React Query
+ ┗ 📂 Navegación
+   ┗ 📜 React Router
+```
+
+### Backend Serverless
+```
+📦 Funciones Netlify
+ ┣ 📜 registrar-asistencia.ts
+ ┣ 📜 get-asistencias.ts
+ ┣ 📜 get-statistics.ts
+ ┗ 📜 get-class-count.ts
+```
+
+### Servicios
+```
+📦 Servicios
+ ┣ 📜 mongoService.ts (Conexión a MongoDB)
+ ┣ 📜 sheetsService.ts (Integración con Google Sheets)
+ ┗ 📜 classesService.ts (Gestión de clases)
+```
+
+### Componentes Clave
+- **Navigation**: Navegación consistente en toda la aplicación
+- **ProtectedRoute**: Control de acceso a rutas protegidas
+- **Componentes UI**: Extensa biblioteca de componentes reutilizables
+
+### Core Files
+- @src/main.tsx - Punto de entrada de la aplicación
+- @src/App.tsx - Componente raíz y enrutamiento
+- @src/pages/Index.tsx - Página principal de registro de asistencia
+- @src/pages/Login.tsx - Página de autenticación docente
+- @src/pages/TeacherPanel.tsx - Panel principal para docentes: gestión y consulta de asistencias y estadísticas integradas
+
+### Servicios y Datos
+- @src/services/sheetsService.ts - Servicio principal de gestión de asistencias
+- @src/services/mongoService.ts - Conexión y operaciones con MongoDB
+- @src/services/estudiantesData.ts - Gestión de datos de estudiantes
+- @listado_completo_nombres.json - Base de datos local de estudiantes
+
+### Funciones Serverless
+- @netlify/functions/registrar-asistencia.ts - Endpoint para registrar asistencia
+- @netlify/functions/get-asistencias.ts - Endpoint para consultar asistencias
+- @netlify/functions/get-statistics.ts - Endpoint para estadísticas
+
+### Estructura de Directorios
+- `src/components/` - Componentes React reutilizables y UI
+- `src/pages/` - Páginas principales de la aplicación
+- `src/services/` - Servicios de datos y lógica de negocio
+- `src/hooks/` - Custom hooks de React
+- `src/context/` - Contextos de React (Auth, Theme)
+- `src/lib/` - Utilidades y funciones auxiliares
+- `netlify/functions/` - Funciones serverless
+
+### Configuración
+- @vite.config.ts - Configuración de Vite
+- @tailwind.config.ts - Configuración de Tailwind CSS
+- @tsconfig.json - Configuración de TypeScript
+- @package.json - Dependencias y scripts 
+
+
+## 🔐 Seguridad
+
+La aplicación implementa múltiples capas de seguridad:
+
+- ✅ **Verificación de identidad** mediante DNI
+- ✅ **Sistema de autenticación** con rutas protegidas
+- ✅ **Validación de datos** tanto en cliente como servidor
+- ✅ **Protección contra duplicados** para mantener integridad de datos
+- ✅ **Respaldo automático** en múltiples sistemas de almacenamiento
+
+---
+
+La aplicación Class Status Logger está diseñada con un enfoque centrado en la experiencia de usuario, ofreciendo interfaces intuitivas y atractivas tanto para estudiantes como para docentes, mientras mantiene un sistema robusto de backend para garantizar la precisión y seguridad de los datos de asistencia.
+
+
+

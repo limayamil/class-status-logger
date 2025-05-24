@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
-import { Loader2, Check, ChevronsUpDown, CheckCircle2 } from 'lucide-react';
+import { Loader2, Check, ChevronsUpDown, CheckCircle2, Hand, User, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   Popover,
@@ -230,15 +230,18 @@ const Index = () => {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Marcar Asistencia</CardTitle>
+                <CardTitle>¿Estás presente?</CardTitle>
                 <CardDescription>
-                  Selecciona tu nombre e ingresa tu DNI correctamente para verificar tu identidad y registrar tu asistencia.
+                Completá tus datos para que te contemos como presente.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nombre y Apellido</Label>
+                    <Label htmlFor="name" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Nombre y Apellido
+                    </Label>
                     {loading ? (
                       <div className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -293,19 +296,24 @@ const Index = () => {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="dni">DNI</Label>
-                    <Input
-                      id="dni"
-                      type="text"
-                      value={dni}
-                      onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Ingresa tu DNI"
-                      required
-                      inputMode="numeric"
-                      pattern="\d*"
-                    />
-                  </div>
+                  {selectedStudent && (
+                    <div className="space-y-2">
+                      <Label htmlFor="dni" className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        DNI
+                      </Label>
+                      <Input
+                        id="dni"
+                        type="text"
+                        value={dni}
+                        onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Tu DNI"
+                        required
+                        inputMode="numeric"
+                        pattern="\d*"
+                      />
+                    </div>
+                  )}
 
                   <CardFooter className="p-0 pt-4">
                     <Button
@@ -319,7 +327,10 @@ const Index = () => {
                           Registrando...
                         </>
                       ) : (
-                        'Estoy Presente'
+                        <>
+                          <Hand className="mr-2 h-4 w-4" />
+                          ¡Estoy presente!
+                        </>
                       )}
                     </Button>
                   </CardFooter>
