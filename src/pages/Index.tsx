@@ -29,6 +29,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import confetti from 'canvas-confetti';
 
 // Definir variantes de animación fuera del componente
 const sectionVariants = {
@@ -97,6 +98,39 @@ const Index = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  // Función para crear el efecto de confetti celebratorio
+  const triggerCelebrationConfetti = () => {
+    // Primera ráfaga desde el centro
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#9333ea', '#c084fc', '#7c3aed', '#a855f7', '#8b5cf6', '#fbbf24', '#f59e0b']
+    });
+
+    // Segunda ráfaga desde la izquierda
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.8 },
+        colors: ['#9333ea', '#c084fc', '#7c3aed', '#a855f7', '#8b5cf6']
+      });
+    }, 250);
+
+    // Tercera ráfaga desde la derecha
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.8 },
+        colors: ['#fbbf24', '#f59e0b', '#eab308', '#facc15']
+      });
+    }, 500);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -154,6 +188,7 @@ const Index = () => {
           toast.success("Asistencia registrada correctamente.");
           mongoSuccess = true;
           setShowThankYou(true);
+          triggerCelebrationConfetti();
         } else if (response.status === 409) {
           const errorData = await response.json();
           toast.error(errorData.message || "Ya has registrado tu asistencia hoy.");

@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { UserCircle, ClipboardList, Moon, Sun } from 'lucide-react';
+import { UserCircle, ClipboardList, Moon, Sun, GraduationCap } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -48,7 +47,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center p-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-brand-purple rounded-md flex items-center justify-center">
-              <span className="text-white font-bold">A</span>
+              <GraduationCap className="h-5 w-5 text-white" />
             </div>
             <span className="font-semibold text-lg">AsistenciaUNI</span>
           </div>
