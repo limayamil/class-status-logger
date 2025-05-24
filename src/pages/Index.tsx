@@ -31,6 +31,12 @@ import {
 import { cn } from "@/lib/utils"
 import confetti from 'canvas-confetti';
 
+// Importar Google Fonts para fuente manuscrita
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
+
 // Definir variantes de animación fuera del componente
 const sectionVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -263,122 +269,169 @@ const Index = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="flex flex-col items-center justify-center p-8 bg-card text-card-foreground rounded-lg shadow-md"
+              className="relative bg-gradient-to-br from-emerald-50/90 via-green-50/90 to-teal-50/90 dark:from-emerald-900/40 dark:via-green-900/30 dark:to-teal-900/40 p-8 shadow-2xl rounded-lg border border-emerald-200/50 dark:border-emerald-700/30"
+              style={{
+                fontFamily: '"Kalam", cursive',
+              }}
             >
-              <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">¡Asistencia Registrada!</h2>
-              <p className="text-muted-foreground text-center">Gracias por marcar tu asistencia.</p>
+              <div className="flex flex-col items-center justify-center text-center">
+                <CheckCircle2 className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mb-4 transform rotate-12" />
+                <h2 className="text-2xl font-semibold mb-2 text-slate-800 dark:text-slate-200 transform -rotate-1" style={{ fontFamily: '"Kalam", cursive' }}>¡Asistencia Registrada!</h2>
+                <p className="text-slate-600 dark:text-slate-400 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive' }}>Gracias por marcar tu asistencia.</p>
+              </div>
             </motion.div>
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>¿Estás presente?</CardTitle>
-                <CardDescription>
-                Completá tus datos para que te contemos como presente.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Nombre y Apellido
-                    </Label>
-                    {loading ? (
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">Cargando estudiantes...</span>
-                      </div>
-                    ) : (
-                      <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openCombobox}
-                            className="w-full justify-between"
-                            disabled={students.length === 0}
-                          >
-                            {selectedStudent
-                              ? students.find((student) => student.id === selectedStudent)?.name
-                              : "Selecciona tu nombre..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0">
-                          <Command>
-                            <CommandInput placeholder="Busca tu nombre..." />
-                            <CommandList>
-                              <CommandEmpty>No se encontró el estudiante.</CommandEmpty>
-                              <CommandGroup>
-                                {students.map((student) => (
-                                  <CommandItem
-                                    key={student.id}
-                                    value={student.name}
-                                    onSelect={(currentValue) => {
-                                      const matchedStudent = students.find(s => s.name.toLowerCase() === currentValue.toLowerCase());
-                                      setSelectedStudent(matchedStudent ? matchedStudent.id : "");
-                                      setOpenCombobox(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        selectedStudent === student.id ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {student.name}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    )}
+            <div className="relative">
+              {/* Efecto de papel */}
+              <div 
+                className="relative bg-gradient-to-br from-amber-50/90 via-yellow-50/90 to-orange-50/90 dark:from-amber-900/40 dark:via-yellow-900/30 dark:to-orange-900/40 p-8 shadow-2xl rounded-lg border border-amber-200/50 dark:border-amber-700/30"
+                style={{
+                  fontFamily: '"Kalam", cursive',
+                }}
+              >
+                {/* Líneas de cuaderno sutiles */}
+                <div className="absolute inset-0 opacity-10 dark:opacity-5 rounded-lg overflow-hidden">
+                  {Array.from({ length: 15 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-blue-300 dark:border-blue-600"
+                      style={{
+                        height: '28px',
+                        marginTop: i === 0 ? '60px' : '0',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="relative z-10">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2 transform -rotate-1" style={{ fontFamily: '"Kalam", cursive' }}>
+                      ¿Estás presente?
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-400 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '16px' }}>
+                      Completá tus datos para que te contemos como presente.
+                    </p>
                   </div>
 
-                  {selectedStudent && (
-                    <div className="space-y-2">
-                      <Label htmlFor="dni" className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        DNI
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="name" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 transform -rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '18px' }}>
+                        <User className="h-5 w-5" />
+                        Nombre y Apellido
                       </Label>
-                      <Input
-                        id="dni"
-                        type="text"
-                        value={dni}
-                        onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Tu DNI"
-                        required
-                        inputMode="numeric"
-                        pattern="\d*"
-                      />
-                    </div>
-                  )}
-
-                  <CardFooter className="p-0 pt-4">
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={submitting || !selectedStudent || !dni || loading}
-                    >
-                      {submitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Registrando...
-                        </>
+                      {loading ? (
+                        <div className="flex items-center space-x-2 p-3">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground" style={{ fontFamily: '"Kalam", cursive' }}>Cargando estudiantes...</span>
+                        </div>
                       ) : (
-                        <>
-                          <Hand className="mr-2 h-4 w-4" />
-                          ¡Estoy presente!
-                        </>
+                        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={openCombobox}
+                              className="w-full justify-between bg-white/80 dark:bg-slate-800/80 border-2 border-slate-300 dark:border-slate-600 rounded-lg shadow-inner hover:bg-white/90 dark:hover:bg-slate-700/90 transform rotate-0.5"
+                              style={{ 
+                                fontFamily: '"Kalam", cursive', 
+                                fontSize: '16px',
+                                borderStyle: 'dashed'
+                              }}
+                              disabled={students.length === 0}
+                            >
+                              {selectedStudent
+                                ? students.find((student) => student.id === selectedStudent)?.name
+                                : "Selecciona tu nombre..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0 bg-amber-50/95 dark:bg-slate-800/95 border-dashed">
+                            <Command>
+                              <CommandInput placeholder="Busca tu nombre..." style={{ fontFamily: '"Kalam", cursive' }} />
+                              <CommandList>
+                                <CommandEmpty style={{ fontFamily: '"Kalam", cursive' }}>No se encontró el estudiante.</CommandEmpty>
+                                <CommandGroup>
+                                  {students.map((student) => (
+                                    <CommandItem
+                                      key={student.id}
+                                      value={student.name}
+                                      style={{ fontFamily: '"Kalam", cursive' }}
+                                      onSelect={(currentValue) => {
+                                        const matchedStudent = students.find(s => s.name.toLowerCase() === currentValue.toLowerCase());
+                                        setSelectedStudent(matchedStudent ? matchedStudent.id : "");
+                                        setOpenCombobox(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          selectedStudent === student.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {student.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </CardContent>
-            </Card>
+                    </div>
+
+                    {selectedStudent && (
+                      <div className="space-y-3">
+                        <Label htmlFor="dni" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '18px' }}>
+                          <CreditCard className="h-5 w-5" />
+                          DNI
+                        </Label>
+                        <Input
+                          id="dni"
+                          type="text"
+                          value={dni}
+                          onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
+                          placeholder="Tu DNI"
+                          required
+                          inputMode="numeric"
+                          pattern="\d*"
+                          className="bg-white/80 dark:bg-slate-800/80 border-2 border-slate-300 dark:border-slate-600 rounded-lg shadow-inner transform -rotate-0.5 text-slate-800 dark:text-slate-200"
+                          style={{ 
+                            fontFamily: '"Kalam", cursive', 
+                            fontSize: '18px',
+                            borderStyle: 'dashed'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="pt-4">
+                      <Button
+                        type="submit"
+                        className="w-full bg-brand-purple hover:brand-purple-700 dark:bg-brand-purple-700 dark:hover:brand-purple-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 rotate-1"
+                        style={{ 
+                          fontFamily: '"Kalam", cursive', 
+                          fontSize: '18px',
+                          textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                        }}
+                        disabled={submitting || !selectedStudent || !dni || loading}
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Registrando...
+                          </>
+                        ) : (
+                          <>
+                            <Hand className="mr-2 h-5 w-5" />
+                            ¡Estoy presente!
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </motion.div>
