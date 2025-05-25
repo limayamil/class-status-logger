@@ -241,7 +241,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-backgroundscreen">
       <Navigation />
 
       <motion.div
@@ -269,32 +269,32 @@ const Index = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="relative bg-gradient-to-br from-emerald-50/90 via-green-50/90 to-teal-50/90 dark:from-emerald-900/40 dark:via-green-900/30 dark:to-teal-900/40 p-8 shadow-2xl rounded-lg border border-emerald-200/50 dark:border-emerald-700/30"
+              className="relative bg-gradient-to-br from-emerald-50/90 via-green-50/90 to-teal-50/90 p-8 shadow-2xl rounded-lg border border-emerald-200/50"
               style={{
                 fontFamily: '"Kalam", cursive',
               }}
             >
               <div className="flex flex-col items-center justify-center text-center">
-                <CheckCircle2 className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mb-4 transform rotate-12" />
-                <h2 className="text-2xl font-semibold mb-2 text-slate-800 dark:text-slate-200 transform -rotate-1" style={{ fontFamily: '"Kalam", cursive' }}>¡Asistencia Registrada!</h2>
-                <p className="text-slate-600 dark:text-slate-400 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive' }}>Gracias por marcar tu asistencia.</p>
+                <CheckCircle2 className="w-16 h-16 text-emerald-600 mb-4 transform rotate-12" />
+                <h2 className="text-2xl font-semibold mb-2 text-slate-800 transform -rotate-1" style={{ fontFamily: '"Kalam", cursive' }}>¡Asistencia Registrada!</h2>
+                <p className="text-slate-600 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive' }}>Gracias por marcar tu asistencia.</p>
               </div>
             </motion.div>
           ) : (
             <div className="relative">
               {/* Efecto de papel */}
               <div 
-                className="relative bg-gradient-to-br from-amber-50/90 via-yellow-50/90 to-orange-50/90 dark:from-amber-900/40 dark:via-yellow-900/30 dark:to-orange-900/40 p-8 shadow-2xl rounded-lg border border-amber-200/50 dark:border-amber-700/30"
+                className="relative bg-amber-50 dark:bg-amber-200 p-8 shadow-2xl rounded-lg border border-amber-300"
                 style={{
                   fontFamily: '"Kalam", cursive',
                 }}
               >
                 {/* Líneas de cuaderno sutiles */}
-                <div className="absolute inset-0 opacity-10 dark:opacity-5 rounded-lg overflow-hidden">
+                <div className="absolute inset-0 opacity-10 rounded-lg overflow-hidden">
                   {Array.from({ length: 15 }).map((_, i) => (
                     <div
                       key={i}
-                      className="border-b border-blue-300 dark:border-blue-600"
+                      className="border-b border-blue-300"
                       style={{
                         height: '28px',
                         marginTop: i === 0 ? '60px' : '0',
@@ -305,17 +305,17 @@ const Index = () => {
 
                 <div className="relative z-10">
                   <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2 transform -rotate-1" style={{ fontFamily: '"Kalam", cursive' }}>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2 transform -rotate-1" style={{ fontFamily: '"Kalam", cursive' }}>
                       ¿Estás presente?
                     </h2>
-                    <p className="text-slate-600 dark:text-slate-400 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '16px' }}>
+                    <p className="text-slate-600 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '16px' }}>
                       Completá tus datos para que te contemos como presente.
                     </p>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="name" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 transform -rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '18px' }}>
+                      <Label htmlFor="name" className="flex items-center gap-2 text-slate-700 transform -rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '18px' }}>
                         <User className="h-5 w-5" />
                         Nombre y Apellido
                       </Label>
@@ -331,7 +331,7 @@ const Index = () => {
                               variant="outline"
                               role="combobox"
                               aria-expanded={openCombobox}
-                              className="w-full justify-between bg-white/80 dark:bg-slate-800/80 border-2 border-slate-300 dark:border-slate-600 rounded-lg shadow-inner hover:bg-white/90 dark:hover:bg-slate-700/90 transform rotate-0.5"
+                              className="w-full justify-between bg-white border-2 border-slate-300 rounded-lg shadow-inner hover:bg-gray-50 hover:text-gray-500 transform rotate-0.5 text-slate-700"
                               style={{ 
                                 fontFamily: '"Kalam", cursive', 
                                 fontSize: '16px',
@@ -345,16 +345,17 @@ const Index = () => {
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0 bg-amber-50/95 dark:bg-slate-800/95 border-dashed">
-                            <Command>
-                              <CommandInput placeholder="Busca tu nombre..." style={{ fontFamily: '"Kalam", cursive' }} />
-                              <CommandList>
-                                <CommandEmpty style={{ fontFamily: '"Kalam", cursive' }}>No se encontró el estudiante.</CommandEmpty>
-                                <CommandGroup>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0 bg-white border border-slate-300 rounded-lg shadow-lg">
+                            <Command className="bg-white">
+                              <CommandInput placeholder="Busca tu nombre..." className="text-slate-700" style={{ fontFamily: '"Kalam", cursive' }} />
+                              <CommandList className="bg-white">
+                                <CommandEmpty className="text-slate-600" style={{ fontFamily: '"Kalam", cursive' }}>No se encontró el estudiante.</CommandEmpty>
+                                <CommandGroup className="bg-white">
                                   {students.map((student) => (
                                     <CommandItem
                                       key={student.id}
                                       value={student.name}
+                                      className="text-slate-700 hover:bg-amber-50"
                                       style={{ fontFamily: '"Kalam", cursive' }}
                                       onSelect={(currentValue) => {
                                         const matchedStudent = students.find(s => s.name.toLowerCase() === currentValue.toLowerCase());
@@ -364,7 +365,7 @@ const Index = () => {
                                     >
                                       <Check
                                         className={cn(
-                                          "mr-2 h-4 w-4",
+                                          "mr-2 h-4 w-4 text-slate-600",
                                           selectedStudent === student.id ? "opacity-100" : "opacity-0"
                                         )}
                                       />
@@ -381,7 +382,7 @@ const Index = () => {
 
                     {selectedStudent && (
                       <div className="space-y-3">
-                        <Label htmlFor="dni" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '18px' }}>
+                        <Label htmlFor="dni" className="flex items-center gap-2 text-slate-700 transform rotate-0.5" style={{ fontFamily: '"Kalam", cursive', fontSize: '18px' }}>
                           <CreditCard className="h-5 w-5" />
                           DNI
                         </Label>
@@ -394,7 +395,7 @@ const Index = () => {
                           required
                           inputMode="numeric"
                           pattern="\d*"
-                          className="bg-white/80 dark:bg-slate-800/80 border-2 border-slate-300 dark:border-slate-600 rounded-lg shadow-inner transform -rotate-0.5 text-slate-800 dark:text-slate-200"
+                          className="bg-white/80 border-2 border-slate-300 rounded-lg shadow-inner transform -rotate-0.5 text-slate-800"
                           style={{ 
                             fontFamily: '"Kalam", cursive', 
                             fontSize: '18px',
@@ -407,7 +408,7 @@ const Index = () => {
                     <div className="pt-4">
                       <Button
                         type="submit"
-                        className="w-full bg-brand-purple hover:brand-purple-700 dark:bg-brand-purple-700 dark:hover:brand-purple-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 rotate-1"
+                        className="w-full bg-brand-purple hover:brand-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 rotate-1"
                         style={{ 
                           fontFamily: '"Kalam", cursive', 
                           fontSize: '18px',
