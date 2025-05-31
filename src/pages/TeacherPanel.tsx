@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
+import { getErrorMessage } from '@/lib/utils'; // Added import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +73,7 @@ const getTodayLocalISOString = () => {
 
 const TeacherPanel = () => {
   const [date, setDate] = useState(() => {
+    // Initialize date to today's date in YYYY-MM-DD format
     const today = new Date();
     const year = today.getFullYear();
     const month = (today.getMonth() + 1).toString().padStart(2, '0'); // +1 porque getMonth es 0-indexed
@@ -86,21 +88,21 @@ const TeacherPanel = () => {
   
   // Statistics state
   const [stats, setStats] = useState<StatisticsData | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true); // Separate loading state for statistics
   const [exportingPDF, setExportingPDF] = useState(false);
   // Añadir estado para actualizar clases
-  const [updatingClasses, setUpdatingClasses] = useState(false);
+  const [updatingClasses, setUpdatingClasses] = useState(false); // Loading state for class count updates
 
-  // Added state for student table in Statistics tab
+  // State for student search and pagination within the Statistics tab
   const [statsStudentSearchTerm, setStatsStudentSearchTerm] = useState('');
   const [statsStudentTablePage, setStatsStudentTablePage] = useState(1);
 
   // State for selected student and their detailed attendance
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [studentAttendanceDetails, setStudentAttendanceDetails] = useState<StudentAttendanceDetail[]>([]);
-  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null); // Tracks the currently selected student for detail view
+  const [studentAttendanceDetails, setStudentAttendanceDetails] = useState<StudentAttendanceDetail[]>([]); // Stores attendance details for the selected student
+  const [detailsLoading, setDetailsLoading] = useState(false); // Loading state for student attendance details
 
-  // --- Animation Variants ---
+  // --- Animation Variants for Framer Motion ---
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -121,35 +123,33 @@ const TeacherPanel = () => {
 
   const fetchAttendanceRecords = async (selectedDate: string) => {
     setLoading(true);
-    setAttendanceRecords([]); // Limpiar registros anteriores mientras carga
+    setAttendanceRecords([]); // Clear previous records while loading
     try {
-      // Llamar a la nueva función Netlify
+      // Call the Netlify function to get attendance for the selected date
       const response = await fetch(`/.netlify/functions/get-asistencias?date=${selectedDate}`);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
-        throw new Error(errorData.message || `Error ${response.status} al obtener asistencias`);
+        // Try to parse error from response, otherwise use a generic message
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(getErrorMessage(errorData.message, `Error ${response.status} al obtener asistencias`));
       }
 
       const recordsFromAPI: AsistenciaDocumentFromAPI[] = await response.json();
 
-      // Mapear los datos recibidos a la interfaz AttendanceRecord que usa el componente
+      // Map the data received from the API to the AttendanceRecord interface used by the component
       const mappedRecords: AttendanceRecord[] = recordsFromAPI.map(record => ({
         _id: record._id,
-        timestamp: record.registradoEn, // Usar registradoEn como timestamp
+        timestamp: record.registradoEn, // Use 'registradoEn' as the timestamp
         studentName: record.nombreEstudiante,
         date: record.fecha,
-        // dni y studentId no están disponibles
+        // DNI and studentId are not available in this collection
       }));
 
       setAttendanceRecords(mappedRecords);
 
     } catch (error: unknown) {
-      let errorMessage = "Error al cargar los registros de asistencia";
-       if (error instanceof Error) {
-          errorMessage = `Error al cargar los registros: ${error.message}`;
-       }
-      toast.error(errorMessage);
+      const errorMessage = getErrorMessage(error, "Error al cargar los registros de asistencia");
+      toast.error(`Error al cargar los registros: ${errorMessage}`);
       console.error(error);
     } finally {
       setLoading(false);
@@ -158,25 +158,22 @@ const TeacherPanel = () => {
 
   const fetchStatistics = async () => {
     setStatsLoading(true);
-    setStats(null); // Limpiar stats anteriores
+    setStats(null); // Clear previous stats
     try {
-      // Llamar a la nueva función Netlify para obtener estadísticas
+      // Call the Netlify function to get overall statistics
       const response = await fetch(`/.netlify/functions/get-statistics`);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
-        throw new Error(errorData.message || `Error ${response.status} al obtener estadísticas`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(getErrorMessage(errorData.message, `Error ${response.status} al obtener estadísticas`));
       }
 
       const statsData: StatisticsData = await response.json();
       setStats(statsData);
 
     } catch (error: unknown) {
-       let errorMessage = "Error al cargar las estadísticas";
-       if (error instanceof Error) {
-          errorMessage = `Error al cargar estadísticas: ${error.message}`;
-       }
-      toast.error(errorMessage);
+      const errorMessage = getErrorMessage(error, "Error al cargar las estadísticas");
+      toast.error(`Error al cargar estadísticas: ${errorMessage}`);
       console.error(error);
     } finally {
       setStatsLoading(false);
@@ -184,9 +181,13 @@ const TeacherPanel = () => {
   };
 
   useEffect(() => {
+    // Fetch attendance records when the date changes.
     fetchAttendanceRecords(date);
+    // Fetch general statistics when the date changes.
+    // This might re-fetch global stats more often than needed if date is the only trigger,
+    // but it ensures stats are fresh if they were to become date-dependent in the future.
     fetchStatistics();
-  }, [date]);
+  }, [date]); // Dependency array: re-run effect when 'date' changes.
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDate(e.target.value);
@@ -196,11 +197,13 @@ const TeacherPanel = () => {
     setExporting('pdf');
     try {
       await sheetsService.exportToPDF(date);
+      toast.success("Exportación a PDF iniciada."); // Provide feedback
     } catch (error) {
-      toast.error("Error al exportar a PDF");
+      const message = getErrorMessage(error, "Error al exportar a PDF");
+      toast.error(message);
       console.error(error);
     } finally {
-      setExporting(null);
+      setExporting(null); // Reset exporting state
     }
   };
 
@@ -208,25 +211,28 @@ const TeacherPanel = () => {
     setExporting('sheets');
     try {
       await sheetsService.exportToSheets(date);
+      toast.success("Exportación a Google Sheets iniciada."); // Provide feedback
     } catch (error) {
-      toast.error("Error al exportar a Google Sheets");
+      const message = getErrorMessage(error, "Error al exportar a Google Sheets");
+      toast.error(message);
       console.error(error);
     } finally {
-      setExporting(null);
+      setExporting(null); // Reset exporting state
     }
   };
 
   const handleExportStatsToPDF = async () => {
     setExportingPDF(true);
     try {
-      // In a real app, this would export the actual statistics
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success('Estadísticas exportadas a PDF correctamente');
+      // Placeholder for actual PDF export logic for statistics
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      toast.success('Estadísticas exportadas a PDF correctamente.');
     } catch (error) {
-      toast.error('Error al exportar las estadísticas');
+      const message = getErrorMessage(error, "Error al exportar las estadísticas a PDF");
+      toast.error(message);
       console.error(error);
     } finally {
-      setExportingPDF(false);
+      setExportingPDF(false); // Reset loading state for this button
     }
   };
 
@@ -235,14 +241,15 @@ const TeacherPanel = () => {
     setUpdatingClasses(true);
     try {
       await classesService.incrementTotalClassesHeld();
-      // Refrescar las estadísticas para obtener el nuevo contador
+      // Refresh statistics to reflect the new total classes held
       fetchStatistics();
-      toast.success('Contador de clases actualizado correctamente');
+      toast.success('Contador de clases actualizado correctamente.');
     } catch (error) {
+      const message = getErrorMessage(error, "Error al actualizar el contador de clases");
+      toast.error(message);
       console.error('Error al incrementar clases:', error);
-      toast.error('Error al actualizar el contador de clases');
     } finally {
-      setUpdatingClasses(false);
+      setUpdatingClasses(false); // Reset loading state for this button
     }
   };
 
@@ -266,61 +273,62 @@ const TeacherPanel = () => {
     : attendanceRecords;
 
   // Memoized calculations for student table in Statistics tab
+  // Memoized calculation for filtering and sorting student statistics based on search term
   const filteredAndSortedStatsStudentStats = useMemo(() => {
-    if (!stats?.studentStats) return [];
+    if (!stats?.studentStats) return []; // Return empty if no student stats available
     return stats.studentStats
       .filter(student => 
-        student.studentName.toLowerCase().includes(statsStudentSearchTerm.toLowerCase())
+        student.studentName.toLowerCase().includes(statsStudentSearchTerm.toLowerCase()) // Case-insensitive search
       )
-      .sort((a, b) => a.studentName.localeCompare(b.studentName));
-  }, [stats?.studentStats, statsStudentSearchTerm]);
+      .sort((a, b) => a.studentName.localeCompare(b.studentName)); // Sort alphabetically by student name
+  }, [stats?.studentStats, statsStudentSearchTerm]); // Recalculate when stats or search term changes
 
+  // Memoized calculation for paginating the filtered and sorted student statistics
   const paginatedStatsStudentStats = useMemo(() => {
     const startIndex = (statsStudentTablePage - 1) * STUDENTS_PER_PAGE;
     return filteredAndSortedStatsStudentStats.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
-  }, [filteredAndSortedStatsStudentStats, statsStudentTablePage]);
+  }, [filteredAndSortedStatsStudentStats, statsStudentTablePage]); // Recalculate when filtered list or page changes
 
+  // Memoized calculation for the total number of pages for student statistics pagination
   const totalStatsStudentTablePages = useMemo(() => {
     return Math.ceil(filteredAndSortedStatsStudentStats.length / STUDENTS_PER_PAGE);
-  }, [filteredAndSortedStatsStudentStats.length]);
+  }, [filteredAndSortedStatsStudentStats.length]); // Recalculate when the length of the filtered list changes
 
-  // Nueva función para obtener detalles de asistencia de un estudiante
+  // Fetches and displays detailed attendance records for a specific student.
+  // Toggles visibility if the same student is clicked again.
   const fetchStudentAttendanceDetails = async (studentName: string) => {
-    if (selectedStudent === studentName) { // Si ya está seleccionado, lo deseleccionamos (toggle)
+    // If the clicked student is already selected, deselect them and clear details (toggle behavior)
+    if (selectedStudent === studentName) {
       setSelectedStudent(null);
       setStudentAttendanceDetails([]);
       return;
     }
 
-    setSelectedStudent(studentName);
+    setSelectedStudent(studentName); // Set the new selected student
     setDetailsLoading(true);
-    setStudentAttendanceDetails([]); // Limpiar detalles anteriores
+    setStudentAttendanceDetails([]); // Clear previous details
 
     try {
-      // Llamar a la función Netlify con el nombre del estudiante
-      // No necesitamos 'date' aquí, ya que queremos todos los registros del estudiante
+      // Fetch all attendance records for the specified student (no date filter)
       const response = await fetch(`/.netlify/functions/get-asistencias?studentName=${encodeURIComponent(studentName)}`);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
-        throw new Error(errorData.message || `Error ${response.status} al obtener detalles de asistencia`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(getErrorMessage(errorData.message, `Error ${response.status} al obtener detalles de asistencia`));
       }
 
       const details: StudentAttendanceDetail[] = await response.json();
       
-      // Ordenar por fecha descendente para mostrar las más recientes primero
+      // Sort details by date in descending order to show the most recent first
       details.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
       
       setStudentAttendanceDetails(details);
 
     } catch (error: unknown) {
-      let errorMessage = "Error al cargar los detalles de asistencia del estudiante";
-       if (error instanceof Error) {
-          errorMessage = `Error al cargar detalles: ${error.message}`;
-       }
-      toast.error(errorMessage);
+      const errorMessage = getErrorMessage(error, "Error al cargar los detalles de asistencia del estudiante");
+      toast.error(`Error al cargar detalles: ${errorMessage}`);
       console.error(error);
-      setSelectedStudent(null); // Deseleccionar en caso de error
+      setSelectedStudent(null); // Deselect student in case of an error
     } finally {
       setDetailsLoading(false);
     }
@@ -389,7 +397,7 @@ const TeacherPanel = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-4">
                     <div className="flex-none">
                       {/* Label component should adapt */}
                       <Label htmlFor="date" className="block text-sm font-medium mb-1"> 
@@ -405,7 +413,7 @@ const TeacherPanel = () => {
                       />
                     </div>
                     
-                    <div className="flex gap-2 self-end">
+                    <div className="flex gap-2 sm:self-end w-full sm:w-auto justify-center sm:justify-start">
                       <Button 
                         variant="outline" 
                         onClick={handleExportToPDF}
