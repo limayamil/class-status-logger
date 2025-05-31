@@ -616,7 +616,7 @@ const TeacherPanel = () => {
                       <BarChart3 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="h-[200px] w-full">
+                      <div className="h-[200px] w-full overflow-x-auto">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={stats.weeklyStats}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -662,7 +662,7 @@ const TeacherPanel = () => {
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="h-[200px] w-full">
+                      <div className="h-[200px] w-full overflow-x-auto">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={stats.monthlyStats}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
