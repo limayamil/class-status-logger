@@ -1,69 +1,63 @@
-# Welcome to your Lovable project
+# AsistenciaUNI
 
-## Project info
+AsistenciaUNI es una aplicación web para registrar y administrar la asistencia de estudiantes de manera rápida y sencilla. El sistema está construido con **React**, **Vite** y **Tailwind CSS**, y utiliza funciones serverless de **Netlify** junto con **MongoDB** para almacenar los datos de forma segura.
 
-**URL**: https://lovable.dev/projects/d9f68019-51bb-4d73-a8aa-fbafe840012c
+## Ventajas principales
 
-## How can I edit this code?
+- **Registro ágil**: los estudiantes pueden marcar su asistencia desde un formulario interactivo que verifica su identidad.
+- **Panel docente**: los profesores cuentan con un panel privado para consultar estadísticas diarias, semanales y mensuales.
+- **Exportaciones**: permite exportar los registros a PDF o Google Sheets para respaldos o reportes.
+- **Interfaz moderna**: diseño responsivo con soporte de tema claro y oscuro.
+- **Backup automático**: además de la base de datos, se realiza un respaldo en Google Sheets mediante webhooks.
+- **Despliegue sencillo**: preparado para ser publicado en Netlify sin configuraciones complejas.
 
-There are several ways of editing your application.
+## Requisitos
 
-**Use Lovable**
+- Node.js 18 o superior.
+- Una base de datos MongoDB accesible y la variable de entorno `MONGODB_URI` configurada.
+- (Opcional) Cuenta en Make/Integromat para las integraciones de exportación.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d9f68019-51bb-4d73-a8aa-fbafe840012c) and start prompting.
+## Instalación
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+# Clonar el repositorio
+git clone <URL_DEL_REPOSITORIO>
+cd class-status-logger
 
-**Use your preferred IDE**
+# Instalar dependencias
+npm install
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Crea un archivo `.env` en la raíz con la variable `MONGODB_URI` apuntando a tu base de datos.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Uso en desarrollo
 
-Follow these steps:
+Inicia el servidor de desarrollo con recarga automática:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+La aplicación estará disponible normalmente en `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Construcción para producción
 
-**Use GitHub Codespaces**
+```bash
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Los archivos optimizados se generarán en la carpeta `dist/` listos para desplegar en Netlify u otro proveedor estático.
 
-## What technologies are used for this project?
+## Despliegue
 
-This project is built with .
+1. Configura la variable `MONGODB_URI` en tu panel de Netlify.
+2. Sube el contenido del repositorio o conecta el repositorio de GitHub.
+3. Netlify ejecutará `npm run build` y publicará el contenido de `dist/`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Contribución
 
-## How can I deploy this project?
+¡Se agradecen las contribuciones! Crea un _fork_ del proyecto y abre un **pull request** con tu mejora o corrección.
 
-Simply open [Lovable](https://lovable.dev/projects/d9f68019-51bb-4d73-a8aa-fbafe840012c) and click on Share -> Publish.
+## Estado del proyecto
 
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+El proyecto se encuentra en desarrollo activo y se utiliza para gestionar asistencias en cursos universitarios. Puedes revisar `tasks.md` para ver las próximas mejoras planificadas.
