@@ -29,6 +29,12 @@ interface StatisticsResponse {
   // Update studentStats to include total attendance count
   studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[];
   totalClassesHeld: number; // Total de clases impartidas
+  // New enhanced metrics
+  totalUniqueStudents: number; // Total de estudiantes únicos que han asistido
+  averageAttendancePerClass: number; // Promedio de asistencia por clase
+  bestAttendanceDay?: { date: string; count: number }; // Mejor día de asistencia
+  worstAttendanceDay?: { date: string; count: number }; // Peor día de asistencia
+  attendanceTrend: { direction: 'up' | 'down' | 'stable'; percentage: number }; // Tendencia
 }
 
 const COLLECTION_NAME = 'asistencias';
@@ -62,8 +68,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   const {
     dateFrom,
     dateTo,
-    materia,
-    comision,
     estado = 'Presente', // Default to 'Presente' to maintain backward compatibility
     showFullHistory
   } = queryParams;
@@ -81,8 +85,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     // --- Build base match filter ---
     const baseMatchFilter: Record<string, unknown> = { estado };
-    if (materia) baseMatchFilter.materia = materia;
-    if (comision) baseMatchFilter.comision = comision;
 
     // --- Calculate date ranges based on parameters ---
     let dailyDateRange: Date, weeklyDateRange: Date, monthlyDateRange: Date, studentDateRange: Date;
@@ -213,13 +215,67 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     }));
 
 
-    // --- Ensamblar Respuesta (Ahora incluye totalClassesHeld) ---
+    // --- Calcular Métricas Adicionales ---
+
+    // Total de estudiantes únicos
+    const totalUniqueStudents = totalStudentStats.length;
+
+    // Promedio de asistencia por clase (basado en las estadísticas diarias filtradas)
+    const totalDailyAttendances = dailyStats.reduce((sum, day) => sum + day.count, 0);
+    const totalDaysWithData = dailyStats.length;
+    const averageAttendancePerClass = totalDaysWithData > 0 ? totalDailyAttendances / totalDaysWithData : 0;
+
+    // Mejor y peor día de asistencia (basado en estadísticas diarias)
+    let bestAttendanceDay: { date: string; count: number } | undefined;
+    let worstAttendanceDay: { date: string; count: number } | undefined;
+
+    if (dailyStats.length > 0) {
+      const sortedDailyStats = [...dailyStats].sort((a, b) => b.count - a.count);
+      bestAttendanceDay = sortedDailyStats[0];
+      worstAttendanceDay = sortedDailyStats[sortedDailyStats.length - 1];
+    }
+
+    // Tendencia de asistencia (comparar últimas 2 semanas con 2 semanas anteriores)
+    let attendanceTrend: { direction: 'up' | 'down' | 'stable'; percentage: number } = {
+      direction: 'stable',
+      percentage: 0
+    };
+
+    if (weeklyStats.length >= 2) {
+      const recentWeeks = weeklyStats.slice(-2);
+      const olderWeeks = weeklyStats.slice(-4, -2);
+
+      if (olderWeeks.length >= 2) {
+        const recentAvg = recentWeeks.reduce((sum, week) => sum + week.count, 0) / recentWeeks.length;
+        const olderAvg = olderWeeks.reduce((sum, week) => sum + week.count, 0) / olderWeeks.length;
+
+        if (olderAvg > 0) {
+          const percentageChange = ((recentAvg - olderAvg) / olderAvg) * 100;
+          attendanceTrend.percentage = Math.abs(percentageChange);
+
+          if (percentageChange > 5) {
+            attendanceTrend.direction = 'up';
+          } else if (percentageChange < -5) {
+            attendanceTrend.direction = 'down';
+          } else {
+            attendanceTrend.direction = 'stable';
+          }
+        }
+      }
+    }
+
+    // --- Ensamblar Respuesta (Ahora incluye todas las métricas) ---
     const responseData: StatisticsResponse = {
       dailyStats,
       weeklyStats,
       monthlyStats,
       studentStats: combinedStudentStats, // Use the combined stats
-      totalClassesHeld // Usa el valor corregido
+      totalClassesHeld, // Usa el valor corregido
+      totalUniqueStudents,
+      averageAttendancePerClass: Math.round(averageAttendancePerClass * 10) / 10, // Round to 1 decimal
+      bestAttendanceDay,
+      worstAttendanceDay,
+      attendanceTrend
     };
 
     return {

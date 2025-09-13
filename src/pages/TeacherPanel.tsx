@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
-import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle, Filter, X, CalendarIcon } from 'lucide-react';
+import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle, Filter, X, CalendarIcon, TrendingUp, TrendingDown, Minus, Star, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -63,8 +63,14 @@ interface StatisticsData {
   weeklyStats: { weekStartDate: string; count: number }[]; // Campo renombrado
   monthlyStats: { month: string; count: number }[]; // Formato YYYY-MM
   // Update studentStats interface to include totalAttendanceCount
-  studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[]; 
+  studentStats: { studentName: string; attendanceCount: number; totalAttendanceCount: number }[];
   totalClassesHeld: number; // Total de clases impartidas
+  // New enhanced metrics
+  totalUniqueStudents: number; // Total de estudiantes únicos que han asistido
+  averageAttendancePerClass: number; // Promedio de asistencia por clase
+  bestAttendanceDay?: { date: string; count: number }; // Mejor día de asistencia
+  worstAttendanceDay?: { date: string; count: number }; // Peor día de asistencia
+  attendanceTrend: { direction: 'up' | 'down' | 'stable'; percentage: number }; // Tendencia
 }
 
 // Helper function to get today's date in YYYY-MM-DD format based on local time
@@ -109,8 +115,6 @@ const TeacherPanel = () => {
   // Filter state
   const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>(undefined);
   const [filterDateTo, setFilterDateTo] = useState<Date | undefined>(undefined);
-  const [filterMateria, setFilterMateria] = useState<string>('');
-  const [filterComision, setFilterComision] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('Presente');
   const [showFullHistory, setShowFullHistory] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState<boolean>(false);
@@ -183,12 +187,6 @@ const TeacherPanel = () => {
       }
       if (filterDateTo) {
         queryParams.append('dateTo', format(filterDateTo, 'yyyy-MM-dd'));
-      }
-      if (filterMateria) {
-        queryParams.append('materia', filterMateria);
-      }
-      if (filterComision) {
-        queryParams.append('comision', filterComision);
       }
       if (filterEstado && filterEstado !== 'Presente') {
         queryParams.append('estado', filterEstado);
@@ -328,8 +326,6 @@ const TeacherPanel = () => {
   const resetFilters = () => {
     setFilterDateFrom(undefined);
     setFilterDateTo(undefined);
-    setFilterMateria('');
-    setFilterComision('');
     setFilterEstado('Presente');
     setShowFullHistory(false);
   };
@@ -338,8 +334,40 @@ const TeacherPanel = () => {
     fetchStatistics();
   };
 
+  // Quick filter presets
+  const applyQuickFilter = (preset: string) => {
+    const today = new Date();
+    resetFilters(); // First clear all filters
+
+    switch (preset) {
+      case 'lastWeek':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        setFilterDateFrom(weekAgo);
+        setFilterDateTo(today);
+        break;
+      case 'lastMonth':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        setFilterDateFrom(monthAgo);
+        setFilterDateTo(today);
+        break;
+      case 'fullHistory':
+        setShowFullHistory(true);
+        break;
+      case 'thisMonth':
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        setFilterDateFrom(startOfMonth);
+        setFilterDateTo(today);
+        break;
+    }
+
+    // Auto-apply the filter after setting
+    setTimeout(() => fetchStatistics(), 100);
+  };
+
   const hasActiveFilters = () => {
-    return filterDateFrom || filterDateTo || filterMateria || filterComision ||
+    return filterDateFrom || filterDateTo ||
            (filterEstado && filterEstado !== 'Presente') || showFullHistory;
   };
 
@@ -347,8 +375,6 @@ const TeacherPanel = () => {
     const filters = [];
     if (filterDateFrom) filters.push(`desde ${format(filterDateFrom, 'dd/MM/yyyy', { locale: es })}`);
     if (filterDateTo) filters.push(`hasta ${format(filterDateTo, 'dd/MM/yyyy', { locale: es })}`);
-    if (filterMateria) filters.push(`materia: ${filterMateria}`);
-    if (filterComision) filters.push(`comisión: ${filterComision}`);
     if (filterEstado && filterEstado !== 'Presente') filters.push(`estado: ${filterEstado}`);
     if (showFullHistory) filters.push('historial completo');
     return filters.length > 0 ? ` (${filters.join(', ')})` : '';
@@ -609,8 +635,6 @@ const TeacherPanel = () => {
                     <Filter className="mr-2 h-4 w-4" />
                     Filtros {hasActiveFilters() && `(${Object.values({
                       dateRange: filterDateFrom || filterDateTo,
-                      materia: filterMateria,
-                      comision: filterComision,
                       estado: filterEstado !== 'Presente',
                       fullHistory: showFullHistory
                     }).filter(Boolean).length})`}
@@ -677,7 +701,47 @@ const TeacherPanel = () => {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
+                      {/* Quick Filter Presets */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Filtros Rápidos</Label>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => applyQuickFilter('lastWeek')}
+                            className="text-xs"
+                          >
+                            Última Semana
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => applyQuickFilter('thisMonth')}
+                            className="text-xs"
+                          >
+                            Este Mes
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => applyQuickFilter('lastMonth')}
+                            className="text-xs"
+                          >
+                            Último Mes
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => applyQuickFilter('fullHistory')}
+                            className="text-xs"
+                          >
+                            Historia Completa
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Custom Filters */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Date From */}
                         <div className="space-y-2">
@@ -733,28 +797,6 @@ const TeacherPanel = () => {
                           </Popover>
                         </div>
 
-                        {/* Materia */}
-                        <div className="space-y-2">
-                          <Label>Materia</Label>
-                          <Input
-                            placeholder="Ej: Matemáticas"
-                            value={filterMateria}
-                            onChange={(e) => setFilterMateria(e.target.value)}
-                          />
-                        </div>
-
-                        {/* Comision */}
-                        <div className="space-y-2">
-                          <Label>Comisión</Label>
-                          <Input
-                            placeholder="Ej: A, B, C"
-                            value={filterComision}
-                            onChange={(e) => setFilterComision(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Estado */}
                         <div className="space-y-2">
                           <Label>Estado de Asistencia</Label>
@@ -773,15 +815,13 @@ const TeacherPanel = () => {
                         {/* Show Full History Toggle */}
                         <div className="space-y-2">
                           <Label>Tipo de Vista</Label>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant={showFullHistory ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setShowFullHistory(!showFullHistory)}
-                            >
-                              {showFullHistory ? "Historia Completa" : "Período Limitado"}
-                            </Button>
-                          </div>
+                          <Button
+                            variant={showFullHistory ? "default" : "outline"}
+                            className="w-full"
+                            onClick={() => setShowFullHistory(!showFullHistory)}
+                          >
+                            {showFullHistory ? "Historia Completa" : "Período Limitado"}
+                          </Button>
                         </div>
                       </div>
 
@@ -823,16 +863,6 @@ const TeacherPanel = () => {
                       Hasta: {format(filterDateTo, 'dd/MM/yyyy', { locale: es })}
                     </span>
                   )}
-                  {filterMateria && (
-                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                      Materia: {filterMateria}
-                    </span>
-                  )}
-                  {filterComision && (
-                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                      Comisión: {filterComision}
-                    </span>
-                  )}
                   {filterEstado !== 'Presente' && (
                     <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
                       Estado: {filterEstado}
@@ -846,127 +876,277 @@ const TeacherPanel = () => {
                 </motion.div>
               )}
 
+              {/* Quick Stats Bar */}
+              {stats && !statsLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-accent/5 via-accent/10 to-accent/5 rounded-lg border mb-6"
+                >
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.totalUniqueStudents}</div>
+                    <div className="text-xs text-muted-foreground">Estudiantes Únicos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.totalClassesHeld}</div>
+                    <div className="text-xs text-muted-foreground">Clases Impartidas</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.averageAttendancePerClass}</div>
+                    <div className="text-xs text-muted-foreground">Promedio por Clase</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={cn("text-2xl font-bold",
+                      stats.attendanceTrend.direction === 'up' ? 'text-green-500' :
+                      stats.attendanceTrend.direction === 'down' ? 'text-red-500' :
+                      'text-muted-foreground'
+                    )}>
+                      {stats.attendanceTrend.direction === 'up' ? '↗' : stats.attendanceTrend.direction === 'down' ? '↘' : '→'}
+                      {stats.attendanceTrend.percentage.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">Tendencia</div>
+                  </div>
+                </motion.div>
+              )}
+
               {statsLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
               ) : stats ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {/* Tasa de Asistencia General Card */}
-                  <motion.div variants={itemVariants} className="lg:col-span-1">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <div className="space-y-1">
-                          <CardTitle className="text-base font-medium">Tasa de Asistencia General</CardTitle>
-                          <CardDescription>Promedio total hasta la fecha</CardDescription>
-                        </div>
-                        <Percent className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-4xl font-bold text-primary">
-                          {calculateOverallAttendanceRate().toFixed(1)}% 
-                        </div>
-                        <p className="text-xs text-muted-foreground pt-1">
-                          Basado en {stats.totalClassesHeld} clases impartidas.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                <>
+                  {/* Top Row - 3 Key Metrics Cards */}
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+                    {/* Tasa de Asistencia General with Donut Chart */}
+                    <motion.div variants={itemVariants}>
+                      <Card className="relative overflow-hidden">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base font-medium">Tasa de Asistencia General</CardTitle>
+                            <CardDescription>Promedio total hasta la fecha</CardDescription>
+                          </div>
+                          <div className="relative">
+                            <div className="w-12 h-12 rounded-full border-4 border-muted flex items-center justify-center">
+                              <Percent className="h-4 w-4 text-primary" />
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-baseline gap-2">
+                            <div className="text-3xl font-bold text-primary">
+                              {calculateOverallAttendanceRate().toFixed(1)}%
+                            </div>
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              <Star className="w-3 h-3 mr-1" />
+                              de {stats.totalClassesHeld} clases
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
 
-                  {/* Weekly Stats */}
-                  <motion.div variants={itemVariants} className="lg:col-span-1">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <div className="space-y-1">
-                        <CardTitle className="text-base font-medium">Asistencia Semanal{getFilterDescription()}</CardTitle>
-                        <CardDescription>{showFullHistory ? 'Historial completo' : 'Últimas 4 semanas'}</CardDescription>
-                      </div>
-                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={stats.weeklyStats}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis
-                              dataKey="weekStartDate" 
-                              stroke="hsl(var(--muted-foreground))" 
-                              fontSize={12}
-                              tickLine={false}
-                              axisLine={false}
-                              tickFormatter={(tick) => {
-                                const date = new Date(tick + 'T00:00:00');
-                                return `Sem ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'numeric' })}`;
-                              }}
-                            />
-                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                            <RechartsTooltip
-                              cursor={{ fill: 'hsl(var(--accent))' }} 
-                              contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
-                              labelStyle={{ color: 'hsl(var(--foreground))' }}
-                              itemStyle={{ color: 'hsl(var(--foreground))' }}
-                              formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
-                              labelFormatter={(label: string) => `Semana del ${new Date(label + 'T00:00:00').toLocaleDateString('es-ES', {
-                                day: 'numeric',
-                                month: 'long'
-                              })}`}
-                            />
-                            <Bar dataKey="count" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                    {/* Total Students and Average */}
+                    <motion.div variants={itemVariants}>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base font-medium">Estudiantes Activos</CardTitle>
+                            <CardDescription>Total únicos y promedio por clase</CardDescription>
+                          </div>
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <div className="flex items-baseline gap-2">
+                              <div className="text-3xl font-bold text-primary">{stats.totalUniqueStudents}</div>
+                              <div className="text-sm text-muted-foreground">estudiantes únicos</div>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <BarChart3 className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">Promedio:</span>
+                              <span className="font-semibold">{stats.averageAttendancePerClass} por clase</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
 
-                  {/* Monthly Stats */}
-                  <motion.div variants={itemVariants} className="lg:col-span-1">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <div className="space-y-1">
-                        <CardTitle className="text-base font-medium">Asistencia Mensual{getFilterDescription()}</CardTitle>
-                        <CardDescription>{showFullHistory ? 'Historial completo' : 'Últimos 3 meses'}</CardDescription>
-                      </div>
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={stats.monthlyStats}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis 
-                              dataKey="month" 
-                              stroke="hsl(var(--muted-foreground))" 
-                              fontSize={12}
-                              tickLine={false}
-                              axisLine={false}
-                              tickFormatter={(tick) => {
-                                const [year, month] = tick.split('-');
-                                return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { month: 'short' });
-                              }}
-                            />
-                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                            <RechartsTooltip 
-                              cursor={{ fill: 'hsl(var(--accent))' }} 
-                              contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} 
-                              labelStyle={{ color: 'hsl(var(--foreground))' }}
-                              itemStyle={{ color: 'hsl(var(--foreground))' }}
-                              formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
-                              labelFormatter={(label: string) => {
-                                const [year, month] = label.split('-');
-                                return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { 
-                                  month: 'long',
-                                  year: 'numeric'
-                                });
-                              }}
-                            />
-                            <Bar dataKey="count" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                    {/* Attendance Trend */}
+                    <motion.div variants={itemVariants}>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base font-medium">Tendencia de Asistencia</CardTitle>
+                            <CardDescription>Comparación últimas semanas</CardDescription>
+                          </div>
+                          {stats.attendanceTrend.direction === 'up' ? (
+                            <TrendingUp className="h-4 w-4 text-green-500" />
+                          ) : stats.attendanceTrend.direction === 'down' ? (
+                            <TrendingDown className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <Minus className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-baseline gap-2">
+                            <div className={cn("text-3xl font-bold",
+                              stats.attendanceTrend.direction === 'up' ? 'text-green-500' :
+                              stats.attendanceTrend.direction === 'down' ? 'text-red-500' :
+                              'text-muted-foreground'
+                            )}>
+                              {stats.attendanceTrend.direction === 'up' ? '+' : stats.attendanceTrend.direction === 'down' ? '-' : ''}
+                              {stats.attendanceTrend.percentage.toFixed(1)}%
+                            </div>
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              {stats.attendanceTrend.direction === 'up' ? (
+                                <ArrowUp className="w-3 h-3 mr-1" />
+                              ) : stats.attendanceTrend.direction === 'down' ? (
+                                <ArrowDown className="w-3 h-3 mr-1" />
+                              ) : null}
+                              {stats.attendanceTrend.direction === 'stable' ? 'Estable' :
+                               stats.attendanceTrend.direction === 'up' ? 'Mejorando' : 'Decreciendo'}
+                            </div>
+                          </div>
+                          {stats.bestAttendanceDay && (
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              Mejor día: {stats.bestAttendanceDay.count} estudiantes el {new Date(stats.bestAttendanceDay.date + 'T00:00:00').toLocaleDateString('es-ES')}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </div>
+
+                  {/* Bottom Row - 2 Large Chart Cards */}
+                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 mb-6">
+
+                    {/* Weekly Stats - Enhanced */}
+                    <motion.div variants={itemVariants}>
+                      <Card className="h-full">
+                        <CardHeader className="pb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-lg font-semibold">Asistencia Semanal{getFilterDescription()}</CardTitle>
+                              <CardDescription>
+                                {showFullHistory ? 'Historial completo' : 'Últimas 4 semanas'} •
+                                {stats.weeklyStats.length} período(s)
+                              </CardDescription>
+                            </div>
+                            <BarChart3 className="h-5 w-5 text-primary" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-[280px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={stats.weeklyStats}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis
+                                  dataKey="weekStartDate"
+                                  stroke="hsl(var(--muted-foreground))"
+                                  fontSize={11}
+                                  tickLine={false}
+                                  axisLine={false}
+                                  tickFormatter={(tick) => {
+                                    const date = new Date(tick + 'T00:00:00');
+                                    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                                  }}
+                                />
+                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                                <RechartsTooltip
+                                  cursor={{ fill: 'hsl(var(--accent))', opacity: 0.3 }}
+                                  contentStyle={{
+                                    backgroundColor: 'hsl(var(--popover))',
+                                    border: '1px solid hsl(var(--border))',
+                                    borderRadius: '6px',
+                                    boxShadow: 'hsl(var(--shadow)) 0px 4px 12px'
+                                  }}
+                                  labelStyle={{ color: 'hsl(var(--popover-foreground))' }}
+                                  itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
+                                  formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                                  labelFormatter={(label: string) =>
+                                    `Semana del ${new Date(label + 'T00:00:00').toLocaleDateString('es-ES', {
+                                      day: 'numeric',
+                                      month: 'long'
+                                    })}`
+                                  }
+                                />
+                                <Bar
+                                  dataKey="count"
+                                  fill="hsl(var(--primary))"
+                                  radius={[4, 4, 0, 0]}
+                                  className="hover:opacity-80 transition-opacity"
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+
+                    {/* Monthly Stats - Enhanced */}
+                    <motion.div variants={itemVariants}>
+                      <Card className="h-full">
+                        <CardHeader className="pb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-lg font-semibold">Asistencia Mensual{getFilterDescription()}</CardTitle>
+                              <CardDescription>
+                                {showFullHistory ? 'Historial completo' : 'Últimos 3 meses'} •
+                                {stats.monthlyStats.length} mes(es)
+                              </CardDescription>
+                            </div>
+                            <Calendar className="h-5 w-5 text-primary" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-[280px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={stats.monthlyStats}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis
+                                  dataKey="month"
+                                  stroke="hsl(var(--muted-foreground))"
+                                  fontSize={11}
+                                  tickLine={false}
+                                  axisLine={false}
+                                  tickFormatter={(tick) => {
+                                    const [year, month] = tick.split('-');
+                                    return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
+                                  }}
+                                />
+                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                                <RechartsTooltip
+                                  cursor={{ fill: 'hsl(var(--accent))', opacity: 0.3 }}
+                                  contentStyle={{
+                                    backgroundColor: 'hsl(var(--popover))',
+                                    border: '1px solid hsl(var(--border))',
+                                    borderRadius: '6px',
+                                    boxShadow: 'hsl(var(--shadow)) 0px 4px 12px'
+                                  }}
+                                  labelStyle={{ color: 'hsl(var(--popover-foreground))' }}
+                                  itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
+                                  formatter={(value: number) => [`${value} estudiantes`, 'Asistencia']}
+                                  labelFormatter={(label: string) => {
+                                    const [year, month] = label.split('-');
+                                    return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('es-ES', {
+                                      month: 'long',
+                                      year: 'numeric'
+                                    });
+                                  }}
+                                />
+                                <Bar
+                                  dataKey="count"
+                                  fill="hsl(var(--secondary))"
+                                  radius={[4, 4, 0, 0]}
+                                  className="hover:opacity-80 transition-opacity"
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </div>
 
                   {/* Student Attendance List */}
                   <motion.div variants={itemVariants} className="col-span-full">
@@ -1127,7 +1307,7 @@ const TeacherPanel = () => {
                       </CardContent>
                     </Card>
                   </motion.div>
-                </div>
+                </>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   No se pudieron cargar las estadísticas.

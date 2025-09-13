@@ -38,8 +38,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     dateFrom,
     dateTo,
     studentName: studentNameParam,
-    materia,
-    comision,
     estado
   } = queryParams;
 
@@ -113,12 +111,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     // Otros filtros
     if (studentNameParam) {
       filter.nombreEstudiante = studentNameParam;
-    }
-    if (materia) {
-      filter.materia = materia;
-    }
-    if (comision) {
-      filter.comision = comision;
     }
     if (estado) {
       filter.estado = estado;
