@@ -57,10 +57,21 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     return { statusCode: 500, headers: jsonHeaders, body: JSON.stringify({ message: "Error interno: Configuración incompleta." }) };
   }
 
+  // Extract query parameters for filtering
+  const queryParams = event.queryStringParameters || {};
+  const {
+    dateFrom,
+    dateTo,
+    materia,
+    comision,
+    estado = 'Presente', // Default to 'Presente' to maintain backward compatibility
+    showFullHistory
+  } = queryParams;
+
   try {
     const asistenciasCollection = await getCollection<AsistenciaDocument>(COLLECTION_NAME);
     const configCollection = await getCollection<ConfigDocument>(CONFIG_COLLECTION);
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalizar a inicio del día
 
@@ -68,21 +79,63 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const configDoc = await configCollection.findOne({ configKey: CONFIG_KEY });
     const totalClassesHeld = configDoc ? configDoc.totalClassesHeld : 0;
 
-    // --- Calcular Estadísticas Diarias (Últimos 7 días) ---
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
+    // --- Build base match filter ---
+    const baseMatchFilter: Record<string, unknown> = { estado };
+    if (materia) baseMatchFilter.materia = materia;
+    if (comision) baseMatchFilter.comision = comision;
+
+    // --- Calculate date ranges based on parameters ---
+    let dailyDateRange: Date, weeklyDateRange: Date, monthlyDateRange: Date, studentDateRange: Date;
+
+    if (showFullHistory === 'true') {
+      // Use very early date to get all historical data
+      const veryEarlyDate = new Date('2020-01-01');
+      dailyDateRange = weeklyDateRange = monthlyDateRange = studentDateRange = veryEarlyDate;
+    } else if (dateFrom && dateTo) {
+      // Use custom date range
+      const customFromDate = new Date(dateFrom);
+      dailyDateRange = weeklyDateRange = monthlyDateRange = studentDateRange = customFromDate;
+    } else {
+      // Use default ranges (backward compatibility)
+      dailyDateRange = new Date(today);
+      dailyDateRange.setDate(today.getDate() - 7);
+
+      weeklyDateRange = getStartOfWeek(new Date(today.setDate(today.getDate() - (4 * 7))));
+
+      monthlyDateRange = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+
+      studentDateRange = new Date(today);
+      studentDateRange.setDate(today.getDate() - 30);
+    }
+
+    // --- Calcular Estadísticas Diarias ---
+    const dailyMatchFilter = {
+      ...baseMatchFilter,
+      registradoEn: { $gte: dailyDateRange }
+    };
+    if (dateFrom && dateTo) {
+      dailyMatchFilter.registradoEn = { $gte: new Date(dateFrom), $lte: new Date(dateTo) };
+    }
+
     const dailyPipeline = [
-      { $match: { registradoEn: { $gte: sevenDaysAgo }, estado: 'Presente' } },
+      { $match: dailyMatchFilter },
       { $group: { _id: "$fecha", count: { $sum: 1 } } },
       { $sort: { _id: 1 } }, // Ordenar por fecha
       { $project: { _id: 0, date: "$_id", count: 1 } } // Renombrar _id a date
     ];
     const dailyStats = await asistenciasCollection.aggregate<{ date: string; count: number }>(dailyPipeline).toArray();
 
-    // --- Calcular Estadísticas Semanales (Últimas 4 semanas) ---
-    const fourWeeksAgoMonday = getStartOfWeek(new Date(today.setDate(today.getDate() - (4 * 7))));
+    // --- Calcular Estadísticas Semanales ---
+    const weeklyMatchFilter = {
+      ...baseMatchFilter,
+      registradoEn: { $gte: weeklyDateRange }
+    };
+    if (dateFrom && dateTo) {
+      weeklyMatchFilter.registradoEn = { $gte: new Date(dateFrom), $lte: new Date(dateTo) };
+    }
+
     const weeklyPipeline = [
-        { $match: { registradoEn: { $gte: fourWeeksAgoMonday }, estado: 'Presente' } },
+        { $match: weeklyMatchFilter },
         {
             $group: {
                 // Agrupar por el lunes de la semana
@@ -98,10 +151,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const weeklyStats = await asistenciasCollection.aggregate<{ weekStartDate: string; count: number }>(weeklyPipeline).toArray();
 
 
-    // --- Calcular Estadísticas Mensuales (Últimos 3 meses) ---
-    const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1); // Inicio de hace 3 meses
+    // --- Calcular Estadísticas Mensuales ---
+    const monthlyMatchFilter = {
+      ...baseMatchFilter,
+      registradoEn: { $gte: monthlyDateRange }
+    };
+    if (dateFrom && dateTo) {
+      monthlyMatchFilter.registradoEn = { $gte: new Date(dateFrom), $lte: new Date(dateTo) };
+    }
+
      const monthlyPipeline = [
-        { $match: { registradoEn: { $gte: threeMonthsAgo }, estado: 'Presente' } },
+        { $match: monthlyMatchFilter },
         {
             $group: {
                 _id: { $dateToString: { format: "%Y-%m", date: "$registradoEn" } }, // Agrupar por año-mes
@@ -114,11 +174,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const monthlyStats = await asistenciasCollection.aggregate<{ month: string; count: number }>(monthlyPipeline).toArray();
 
 
-    // --- Calcular Estadísticas por Estudiante (Últimos 30 días) ---
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    // --- Calcular Estadísticas por Estudiante (período específico) ---
+    const studentMatchFilter = {
+      ...baseMatchFilter,
+      registradoEn: { $gte: studentDateRange }
+    };
+    if (dateFrom && dateTo) {
+      studentMatchFilter.registradoEn = { $gte: new Date(dateFrom), $lte: new Date(dateTo) };
+    }
+
     const studentPipeline = [
-      { $match: { registradoEn: { $gte: thirtyDaysAgo }, estado: 'Presente' } },
+      { $match: studentMatchFilter },
       { $group: { _id: "$nombreEstudiante", attendanceCount: { $sum: 1 } } },
       { $sort: { attendanceCount: 1 } }, // Ordenar por menos asistencias primero
       { $project: { _id: 0, studentName: "$_id", attendanceCount: 1 } }
@@ -127,7 +193,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     // --- Calcular Estadísticas Totales por Estudiante ---
     const totalStudentPipeline = [
-      { $match: { estado: 'Presente' } }, // Match all 'Presente' records regardless of date
+      { $match: baseMatchFilter }, // Use base filter but without date restrictions for totals
       { $group: { _id: "$nombreEstudiante", totalAttendanceCount: { $sum: 1 } } },
       { $project: { _id: 0, studentName: "$_id", totalAttendanceCount: 1 } }
     ];

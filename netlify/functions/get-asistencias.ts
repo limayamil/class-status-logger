@@ -31,28 +31,49 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
   }
 
-  // Obtener la fecha del query string
-  const dateParam = event.queryStringParameters?.date;
-  const studentNameParam = event.queryStringParameters?.studentName;
+  // Obtener parámetros del query string
+  const queryParams = event.queryStringParameters || {};
+  const {
+    date: dateParam,
+    dateFrom,
+    dateTo,
+    studentName: studentNameParam,
+    materia,
+    comision,
+    estado
+  } = queryParams;
 
-  if (!dateParam && !studentNameParam) {
+  // Validar que al menos un parámetro esté presente
+  if (!dateParam && !studentNameParam && !dateFrom && !dateTo) {
     return {
       statusCode: 400, // Bad Request
       headers: jsonHeaders,
-      body: JSON.stringify({ message: "Faltan los parámetros requeridos. Se necesita 'date' o 'studentName'." }),
+      body: JSON.stringify({ message: "Faltan los parámetros requeridos. Se necesita 'date', 'dateFrom/dateTo' o 'studentName'." }),
     };
   }
 
-  // Validación simple del formato de fecha (YYYY-MM-DD) si se proporciona dateParam
-  if (dateParam) {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dateParam)) {
-        return {
-            statusCode: 400,
-            headers: jsonHeaders,
-            body: JSON.stringify({ message: "Formato de fecha inválido. Use YYYY-MM-DD." }),
-        };
-    }
+  // Validación simple del formato de fecha (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (dateParam && !dateRegex.test(dateParam)) {
+    return {
+      statusCode: 400,
+      headers: jsonHeaders,
+      body: JSON.stringify({ message: "Formato de fecha inválido. Use YYYY-MM-DD." }),
+    };
+  }
+  if (dateFrom && !dateRegex.test(dateFrom)) {
+    return {
+      statusCode: 400,
+      headers: jsonHeaders,
+      body: JSON.stringify({ message: "Formato de dateFrom inválido. Use YYYY-MM-DD." }),
+    };
+  }
+  if (dateTo && !dateRegex.test(dateTo)) {
+    return {
+      statusCode: 400,
+      headers: jsonHeaders,
+      body: JSON.stringify({ message: "Formato de dateTo inválido. Use YYYY-MM-DD." }),
+    };
   }
 
   // Verificar que MONGODB_URI esté disponible
@@ -70,15 +91,40 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     const asistenciasCollection = await getCollection<AsistenciaDocument>(COLLECTION_NAME);
 
     // Construir el filtro dinámicamente
-    const filter: { fecha?: string; nombreEstudiante?: string } = {};
+    const filter: Record<string, unknown> = {};
+
+    // Filtro por fecha específica o rango de fechas
     if (dateParam) {
       filter.fecha = dateParam;
+    } else if (dateFrom || dateTo) {
+      // Si solo hay dateFrom, buscar desde esa fecha en adelante
+      // Si solo hay dateTo, buscar hasta esa fecha
+      // Si hay ambos, buscar en el rango
+      const dateFilter: Record<string, string> = {};
+      if (dateFrom) {
+        dateFilter.$gte = dateFrom;
+      }
+      if (dateTo) {
+        dateFilter.$lte = dateTo;
+      }
+      filter.fecha = dateFilter;
     }
+
+    // Otros filtros
     if (studentNameParam) {
       filter.nombreEstudiante = studentNameParam;
     }
+    if (materia) {
+      filter.materia = materia;
+    }
+    if (comision) {
+      filter.comision = comision;
+    }
+    if (estado) {
+      filter.estado = estado;
+    }
 
-    // Buscar los registros para la fecha especificada y/o estudiante
+    // Buscar los registros con los filtros aplicados
     // Ordenamos por fecha de registro para que aparezcan en orden de llegada
     const records = await asistenciasCollection.find(filter).sort({ registradoEn: 1 }).toArray();
 

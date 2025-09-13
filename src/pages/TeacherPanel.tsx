@@ -4,10 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label'; // Added missing import
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
-import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle } from 'lucide-react';
+import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle, Filter, X, CalendarIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -21,6 +24,9 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { classesService } from '@/services/classesService';
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const STUDENTS_PER_PAGE = 10; // Define STUDENTS_PER_PAGE here
 
@@ -100,6 +106,15 @@ const TeacherPanel = () => {
   const [studentAttendanceDetails, setStudentAttendanceDetails] = useState<StudentAttendanceDetail[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  // Filter state
+  const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>(undefined);
+  const [filterDateTo, setFilterDateTo] = useState<Date | undefined>(undefined);
+  const [filterMateria, setFilterMateria] = useState<string>('');
+  const [filterComision, setFilterComision] = useState<string>('');
+  const [filterEstado, setFilterEstado] = useState<string>('Presente');
+  const [showFullHistory, setShowFullHistory] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+
   // --- Animation Variants ---
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -160,8 +175,33 @@ const TeacherPanel = () => {
     setStatsLoading(true);
     setStats(null); // Limpiar stats anteriores
     try {
-      // Llamar a la nueva función Netlify para obtener estadísticas
-      const response = await fetch(`/.netlify/functions/get-statistics`);
+      // Build query parameters for filtering
+      const queryParams = new URLSearchParams();
+
+      if (filterDateFrom) {
+        queryParams.append('dateFrom', format(filterDateFrom, 'yyyy-MM-dd'));
+      }
+      if (filterDateTo) {
+        queryParams.append('dateTo', format(filterDateTo, 'yyyy-MM-dd'));
+      }
+      if (filterMateria) {
+        queryParams.append('materia', filterMateria);
+      }
+      if (filterComision) {
+        queryParams.append('comision', filterComision);
+      }
+      if (filterEstado && filterEstado !== 'Presente') {
+        queryParams.append('estado', filterEstado);
+      }
+      if (showFullHistory) {
+        queryParams.append('showFullHistory', 'true');
+      }
+
+      const queryString = queryParams.toString();
+      const url = `/.netlify/functions/get-statistics${queryString ? `?${queryString}` : ''}`;
+
+      // Llamar a la función Netlify para obtener estadísticas con filtros
+      const response = await fetch(url);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor' }));
@@ -186,7 +226,7 @@ const TeacherPanel = () => {
   useEffect(() => {
     fetchAttendanceRecords(date);
     fetchStatistics();
-  }, [date]);
+  }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDate(e.target.value);
@@ -283,6 +323,36 @@ const TeacherPanel = () => {
   const totalStatsStudentTablePages = useMemo(() => {
     return Math.ceil(filteredAndSortedStatsStudentStats.length / STUDENTS_PER_PAGE);
   }, [filteredAndSortedStatsStudentStats.length]);
+
+  // Filter helper functions
+  const resetFilters = () => {
+    setFilterDateFrom(undefined);
+    setFilterDateTo(undefined);
+    setFilterMateria('');
+    setFilterComision('');
+    setFilterEstado('Presente');
+    setShowFullHistory(false);
+  };
+
+  const applyFilters = () => {
+    fetchStatistics();
+  };
+
+  const hasActiveFilters = () => {
+    return filterDateFrom || filterDateTo || filterMateria || filterComision ||
+           (filterEstado && filterEstado !== 'Presente') || showFullHistory;
+  };
+
+  const getFilterDescription = () => {
+    const filters = [];
+    if (filterDateFrom) filters.push(`desde ${format(filterDateFrom, 'dd/MM/yyyy', { locale: es })}`);
+    if (filterDateTo) filters.push(`hasta ${format(filterDateTo, 'dd/MM/yyyy', { locale: es })}`);
+    if (filterMateria) filters.push(`materia: ${filterMateria}`);
+    if (filterComision) filters.push(`comisión: ${filterComision}`);
+    if (filterEstado && filterEstado !== 'Presente') filters.push(`estado: ${filterEstado}`);
+    if (showFullHistory) filters.push('historial completo');
+    return filters.length > 0 ? ` (${filters.join(', ')})` : '';
+  };
 
   // Nueva función para obtener detalles de asistencia de un estudiante
   const fetchStudentAttendanceDetails = async (studentName: string) => {
@@ -528,11 +598,27 @@ const TeacherPanel = () => {
             <TabsContent value="statistics" className="space-y-4">
               <div className="flex flex-wrap justify-between items-center mb-8 gap-2">
                 <CardTitle>Estadísticas de Asistencia</CardTitle>
-              
+
                 <div className="flex gap-2 flex-wrap">
+                  {/* Filter toggle button */}
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={cn(hasActiveFilters() && "border-primary bg-primary/10")}
+                  >
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtros {hasActiveFilters() && `(${Object.values({
+                      dateRange: filterDateFrom || filterDateTo,
+                      materia: filterMateria,
+                      comision: filterComision,
+                      estado: filterEstado !== 'Presente',
+                      fullHistory: showFullHistory
+                    }).filter(Boolean).length})`}
+                  </Button>
+
                   {/* Botón para incrementar clases */}
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleIncrementClasses}
                     disabled={statsLoading || updatingClasses}
                     className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
@@ -550,8 +636,8 @@ const TeacherPanel = () => {
                     )}
                   </Button>
 
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleExportStatsToPDF}
                     disabled={statsLoading || exportingPDF}
                   >
@@ -569,6 +655,196 @@ const TeacherPanel = () => {
                   </Button>
                 </div>
               </div>
+
+              {/* Filter Panel */}
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6"
+                >
+                  <Card>
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">Filtros de Estadísticas</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowFilters(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Date From */}
+                        <div className="space-y-2">
+                          <Label>Fecha Desde</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !filterDateFrom && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {filterDateFrom ? format(filterDateFrom, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <CalendarComponent
+                                mode="single"
+                                selected={filterDateFrom}
+                                onSelect={setFilterDateFrom}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        {/* Date To */}
+                        <div className="space-y-2">
+                          <Label>Fecha Hasta</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !filterDateTo && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {filterDateTo ? format(filterDateTo, "dd/MM/yyyy", { locale: es }) : "Seleccionar fecha"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <CalendarComponent
+                                mode="single"
+                                selected={filterDateTo}
+                                onSelect={setFilterDateTo}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        {/* Materia */}
+                        <div className="space-y-2">
+                          <Label>Materia</Label>
+                          <Input
+                            placeholder="Ej: Matemáticas"
+                            value={filterMateria}
+                            onChange={(e) => setFilterMateria(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Comision */}
+                        <div className="space-y-2">
+                          <Label>Comisión</Label>
+                          <Input
+                            placeholder="Ej: A, B, C"
+                            value={filterComision}
+                            onChange={(e) => setFilterComision(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Estado */}
+                        <div className="space-y-2">
+                          <Label>Estado de Asistencia</Label>
+                          <Select value={filterEstado} onValueChange={setFilterEstado}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Presente">Presente</SelectItem>
+                              <SelectItem value="Ausente">Ausente</SelectItem>
+                              <SelectItem value="Justificado">Justificado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Show Full History Toggle */}
+                        <div className="space-y-2">
+                          <Label>Tipo de Vista</Label>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant={showFullHistory ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setShowFullHistory(!showFullHistory)}
+                            >
+                              {showFullHistory ? "Historia Completa" : "Período Limitado"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-4 border-t">
+                        <Button onClick={applyFilters} className="flex-1">
+                          Aplicar Filtros
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            resetFilters();
+                            // Auto-apply after reset
+                            setTimeout(applyFilters, 100);
+                          }}
+                        >
+                          Limpiar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Active Filters Summary */}
+              {hasActiveFilters() && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-wrap items-center gap-2 p-3 bg-accent/20 rounded-lg border"
+                >
+                  <span className="text-sm font-medium text-muted-foreground">Filtros activos:</span>
+                  {filterDateFrom && (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      Desde: {format(filterDateFrom, 'dd/MM/yyyy', { locale: es })}
+                    </span>
+                  )}
+                  {filterDateTo && (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      Hasta: {format(filterDateTo, 'dd/MM/yyyy', { locale: es })}
+                    </span>
+                  )}
+                  {filterMateria && (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      Materia: {filterMateria}
+                    </span>
+                  )}
+                  {filterComision && (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      Comisión: {filterComision}
+                    </span>
+                  )}
+                  {filterEstado !== 'Presente' && (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      Estado: {filterEstado}
+                    </span>
+                  )}
+                  {showFullHistory && (
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      Historial Completo
+                    </span>
+                  )}
+                </motion.div>
+              )}
 
               {statsLoading ? (
                 <div className="flex justify-center py-12">
@@ -602,8 +878,8 @@ const TeacherPanel = () => {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div className="space-y-1">
-                        <CardTitle className="text-base font-medium">Asistencia Semanal</CardTitle>
-                        <CardDescription>Últimas 4 semanas</CardDescription>
+                        <CardTitle className="text-base font-medium">Asistencia Semanal{getFilterDescription()}</CardTitle>
+                        <CardDescription>{showFullHistory ? 'Historial completo' : 'Últimas 4 semanas'}</CardDescription>
                       </div>
                       <BarChart3 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -648,8 +924,8 @@ const TeacherPanel = () => {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div className="space-y-1">
-                        <CardTitle className="text-base font-medium">Asistencia Mensual</CardTitle>
-                        <CardDescription>Últimos 3 meses</CardDescription>
+                        <CardTitle className="text-base font-medium">Asistencia Mensual{getFilterDescription()}</CardTitle>
+                        <CardDescription>{showFullHistory ? 'Historial completo' : 'Últimos 3 meses'}</CardDescription>
                       </div>
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -697,7 +973,7 @@ const TeacherPanel = () => {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div className="space-y-1">
-                        <CardTitle className="text-base font-medium">Asistencia por Estudiante</CardTitle>
+                        <CardTitle className="text-base font-medium">Asistencia por Estudiante{getFilterDescription()}</CardTitle>
                         <CardDescription>Detalle de asistencia individual ({stats.totalClassesHeld} clases totales)</CardDescription>
                       </div>
                       <Users className="h-4 w-4 text-muted-foreground" />
