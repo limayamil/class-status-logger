@@ -1,140 +1,100 @@
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
-import { ObjectId } from 'mongodb';
-import { getCollection } from "../../src/services/mongoService"; // Ajusta la ruta si es necesario
+import { sql } from "../../src/services/neonService";
 
-// Interfaz para el documento almacenado en MongoDB (igual que en registrar-asistencia)
-interface AsistenciaDocument {
-  _id?: ObjectId;
-  fecha: string; // Ej: "2024-04-15"
-  nombreEstudiante: string;
-  estado: 'Presente' | 'Ausente' | 'Justificado';
-  materia?: string;
-  comision?: string;
-  registradoEn: Date; // Marca de tiempo del servidor
-}
-
-// Nombre de la colección en MongoDB
-const COLLECTION_NAME = 'asistencias';
-
-// Encabezados comunes para respuestas JSON
 const jsonHeaders: { [header: string]: string | number | boolean } = {
   'Content-Type': 'application/json'
 };
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  // Solo permitir solicitudes GET
   if (event.httpMethod !== "GET") {
     return {
-      statusCode: 405, // Method Not Allowed
+      statusCode: 405,
       headers: { ...jsonHeaders, "Allow": "GET" },
       body: JSON.stringify({ message: "Método no permitido. Solo se acepta GET." }),
     };
   }
 
-  // Obtener parámetros del query string
-  const queryParams = event.queryStringParameters || {};
-  const {
-    date: dateParam,
-    dateFrom,
-    dateTo,
-    studentName: studentNameParam,
-    estado
-  } = queryParams;
+  const dateParam = event.queryStringParameters?.date;
+  const studentNameParam = event.queryStringParameters?.studentName;
 
-  // Validar que al menos un parámetro esté presente
-  if (!dateParam && !studentNameParam && !dateFrom && !dateTo) {
-    return {
-      statusCode: 400, // Bad Request
-      headers: jsonHeaders,
-      body: JSON.stringify({ message: "Faltan los parámetros requeridos. Se necesita 'date', 'dateFrom/dateTo' o 'studentName'." }),
-    };
-  }
-
-  // Validación simple del formato de fecha (YYYY-MM-DD)
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (dateParam && !dateRegex.test(dateParam)) {
+  if (!dateParam && !studentNameParam) {
     return {
       statusCode: 400,
       headers: jsonHeaders,
-      body: JSON.stringify({ message: "Formato de fecha inválido. Use YYYY-MM-DD." }),
-    };
-  }
-  if (dateFrom && !dateRegex.test(dateFrom)) {
-    return {
-      statusCode: 400,
-      headers: jsonHeaders,
-      body: JSON.stringify({ message: "Formato de dateFrom inválido. Use YYYY-MM-DD." }),
-    };
-  }
-  if (dateTo && !dateRegex.test(dateTo)) {
-    return {
-      statusCode: 400,
-      headers: jsonHeaders,
-      body: JSON.stringify({ message: "Formato de dateTo inválido. Use YYYY-MM-DD." }),
+      body: JSON.stringify({ message: "Faltan los parámetros requeridos. Se necesita 'date' o 'studentName'." }),
     };
   }
 
-  // Verificar que MONGODB_URI esté disponible
-  if (!process.env.MONGODB_URI) {
-      console.error('Error: MONGODB_URI no está configurada en el entorno.');
+  if (dateParam) {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateParam)) {
       return {
-          statusCode: 500,
-          headers: jsonHeaders,
-          body: JSON.stringify({ message: "Error interno del servidor: Configuración incompleta." }),
+        statusCode: 400,
+        headers: jsonHeaders,
+        body: JSON.stringify({ message: "Formato de fecha inválido. Use YYYY-MM-DD." }),
       };
+    }
+  }
+
+  if (!process.env.DATABASE_URL) {
+    console.error('Error: DATABASE_URL no está configurada en el entorno.');
+    return {
+      statusCode: 500,
+      headers: jsonHeaders,
+      body: JSON.stringify({ message: "Error interno del servidor: Configuración incompleta." }),
+    };
   }
 
   try {
-    // Obtener la colección de MongoDB
-    const asistenciasCollection = await getCollection<AsistenciaDocument>(COLLECTION_NAME);
-
-    // Construir el filtro dinámicamente
-    const filter: Record<string, unknown> = {};
-
-    // Filtro por fecha específica o rango de fechas
-    if (dateParam) {
-      filter.fecha = dateParam;
-    } else if (dateFrom || dateTo) {
-      // Si solo hay dateFrom, buscar desde esa fecha en adelante
-      // Si solo hay dateTo, buscar hasta esa fecha
-      // Si hay ambos, buscar en el rango
-      const dateFilter: Record<string, string> = {};
-      if (dateFrom) {
-        dateFilter.$gte = dateFrom;
-      }
-      if (dateTo) {
-        dateFilter.$lte = dateTo;
-      }
-      filter.fecha = dateFilter;
+    let rows;
+    if (dateParam && studentNameParam) {
+      rows = await sql`
+        SELECT id, fecha, nombre_estudiante, estado, materia, comision, registrado_en
+        FROM asistencias
+        WHERE fecha = ${dateParam}::date AND nombre_estudiante = ${studentNameParam}
+        ORDER BY registrado_en ASC
+      `;
+    } else if (dateParam) {
+      rows = await sql`
+        SELECT id, fecha, nombre_estudiante, estado, materia, comision, registrado_en
+        FROM asistencias
+        WHERE fecha = ${dateParam}::date
+        ORDER BY registrado_en ASC
+      `;
+    } else {
+      rows = await sql`
+        SELECT id, fecha, nombre_estudiante, estado, materia, comision, registrado_en
+        FROM asistencias
+        WHERE nombre_estudiante = ${studentNameParam}
+        ORDER BY registrado_en ASC
+      `;
     }
 
-    // Otros filtros
-    if (studentNameParam) {
-      filter.nombreEstudiante = studentNameParam;
-    }
-    if (estado) {
-      filter.estado = estado;
-    }
+    // Mapear snake_case a camelCase para compatibilidad con el frontend
+    const records = rows.map((r: Record<string, unknown>) => ({
+      _id: r.id,
+      fecha: r.fecha,
+      nombreEstudiante: r.nombre_estudiante,
+      estado: r.estado,
+      materia: r.materia,
+      comision: r.comision,
+      registradoEn: r.registrado_en,
+    }));
 
-    // Buscar los registros con los filtros aplicados
-    // Ordenamos por fecha de registro para que aparezcan en orden de llegada
-    const records = await asistenciasCollection.find(filter).sort({ registradoEn: 1 }).toArray();
-
-    // Devolver los registros encontrados
     return {
-      statusCode: 200, // OK
+      statusCode: 200,
       headers: jsonHeaders,
-      body: JSON.stringify(records), // Devolvemos el array de documentos
+      body: JSON.stringify(records),
     };
 
   } catch (error: unknown) {
     let errorMessage = "Error desconocido al obtener asistencias.";
     if (error instanceof Error) {
-        errorMessage = `Error al obtener asistencias: ${error.message}`;
+      errorMessage = `Error al obtener asistencias: ${error.message}`;
     }
     console.error(errorMessage, error);
     return {
-      statusCode: 500, // Internal Server Error
+      statusCode: 500,
       headers: jsonHeaders,
       body: JSON.stringify({ message: errorMessage }),
     };
