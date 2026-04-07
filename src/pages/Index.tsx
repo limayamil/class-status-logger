@@ -259,7 +259,7 @@ const Index = () => {
                 className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-md filter hover:drop-shadow-lg transition-all duration-300"
               />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Taller de medios</h1>
+            <h1 className="text-3xl font-bold text-foreground">Taller de Medios de Comunicación Institucional</h1>
             <p className="text-brand-purple mt-2 capitalize">{currentDate}</p>
             <p className="text-muted-foreground">{currentTime}</p>
           </div>
