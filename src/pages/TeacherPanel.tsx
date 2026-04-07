@@ -205,23 +205,34 @@ const TeacherPanel = () => {
     }
   };
 
-  const fetchStatistics = async () => {
+  const fetchStatistics = async (overrides?: {
+    dateFrom?: Date;
+    dateTo?: Date;
+    estado?: string;
+    fullHistory?: boolean;
+  }) => {
     setStatsLoading(true);
     setStats(null); // Limpiar stats anteriores
     try {
+      // Use overrides if provided, otherwise fall back to current state
+      const effectiveDateFrom = overrides ? overrides.dateFrom : filterDateFrom;
+      const effectiveDateTo = overrides ? overrides.dateTo : filterDateTo;
+      const effectiveEstado = overrides ? (overrides.estado ?? 'Presente') : filterEstado;
+      const effectiveFullHistory = overrides ? (overrides.fullHistory ?? false) : showFullHistory;
+
       // Build query parameters for filtering
       const queryParams = new URLSearchParams();
 
-      if (filterDateFrom) {
-        queryParams.append('dateFrom', format(filterDateFrom, 'yyyy-MM-dd'));
+      if (effectiveDateFrom) {
+        queryParams.append('dateFrom', format(effectiveDateFrom, 'yyyy-MM-dd'));
       }
-      if (filterDateTo) {
-        queryParams.append('dateTo', format(filterDateTo, 'yyyy-MM-dd'));
+      if (effectiveDateTo) {
+        queryParams.append('dateTo', format(effectiveDateTo, 'yyyy-MM-dd'));
       }
-      if (filterEstado && filterEstado !== 'Presente') {
-        queryParams.append('estado', filterEstado);
+      if (effectiveEstado && effectiveEstado !== 'Presente') {
+        queryParams.append('estado', effectiveEstado);
       }
-      if (showFullHistory) {
+      if (effectiveFullHistory) {
         queryParams.append('showFullHistory', 'true');
       }
 
@@ -367,33 +378,44 @@ const TeacherPanel = () => {
   // Quick filter presets
   const applyQuickFilter = (preset: string) => {
     const today = new Date();
-    resetFilters(); // First clear all filters
+    let dateFrom: Date | undefined;
+    let dateTo: Date | undefined;
+    let fullHistory = false;
 
     switch (preset) {
-      case 'lastWeek':
+      case 'lastWeek': {
         const weekAgo = new Date(today);
         weekAgo.setDate(today.getDate() - 7);
-        setFilterDateFrom(weekAgo);
-        setFilterDateTo(today);
+        dateFrom = weekAgo;
+        dateTo = today;
         break;
-      case 'lastMonth':
+      }
+      case 'lastMonth': {
         const monthAgo = new Date(today);
         monthAgo.setMonth(today.getMonth() - 1);
-        setFilterDateFrom(monthAgo);
-        setFilterDateTo(today);
+        dateFrom = monthAgo;
+        dateTo = today;
         break;
+      }
       case 'fullHistory':
-        setShowFullHistory(true);
+        fullHistory = true;
         break;
-      case 'thisMonth':
+      case 'thisMonth': {
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        setFilterDateFrom(startOfMonth);
-        setFilterDateTo(today);
+        dateFrom = startOfMonth;
+        dateTo = today;
         break;
+      }
     }
 
-    // Auto-apply the filter after setting
-    setTimeout(() => fetchStatistics(), 100);
+    // Update state for UI
+    setFilterDateFrom(dateFrom);
+    setFilterDateTo(dateTo);
+    setFilterEstado('Presente');
+    setShowFullHistory(fullHistory);
+
+    // Fetch with the values directly (don't wait for state update)
+    fetchStatistics({ dateFrom, dateTo, estado: 'Presente', fullHistory });
   };
 
   const hasActiveFilters = () => {
@@ -902,8 +924,8 @@ const TeacherPanel = () => {
                           variant="outline"
                           onClick={() => {
                             resetFilters();
-                            // Auto-apply after reset
-                            setTimeout(applyFilters, 100);
+                            // Fetch with cleared filters directly
+                            fetchStatistics({ estado: 'Presente' });
                           }}
                         >
                           Limpiar

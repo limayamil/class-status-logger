@@ -1,5 +1,7 @@
 import { toast } from "sonner";
 
+const MAKE_WEBHOOK_URL = import.meta.env.VITE_MAKE_WEBHOOK_URL as string;
+
 interface Student {
   id: string;
   name: string;
@@ -43,50 +45,7 @@ const getTodayDate = (): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Función para sincronizar datos desde Make (webhook)
-const fetchAttendanceFromWebhook = async (date: string): Promise<AttendanceRecord[]> => {
-  try {
-    // En un entorno real, aquí haríamos una petición al webhook
-    // para recuperar los datos almacenados externamente
-    // Por ahora, usamos los datos locales como fallback
-
-    // Este sería el formato de la petición real:
-    /*
-    const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: "GetAttendance",
-        date: date
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error al recuperar datos: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.records.map(record => ({
-      timestamp: record.timestamp,
-      studentId: record.studentId,
-      studentName: `${record.nombre} ${record.apellido}`,
-      dni: record.documento,
-      date: record.fecha
-    }));
-    */
-
-    // Por ahora devolvemos los datos locales
-    return MOCK_ATTENDANCE[date] || [];
-  } catch (error) {
-    console.error("Error al recuperar datos desde el webhook:", error);
-    // Fallback a datos locales en caso de error
-    return MOCK_ATTENDANCE[date] || [];
-  }
-};
-
-// Mock implementation of the service - would be replaced with actual API calls
+// Service for attendance operations
 export const sheetsService = {
   // Get all students
   getStudents: async (): Promise<Student[]> => {
@@ -132,7 +91,7 @@ export const sheetsService = {
       console.log("Enviando datos al webhook:", webhookData);
 
       // Enviar datos al webhook de Make
-      const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+      const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,147 +155,6 @@ export const sheetsService = {
     }
   },
 
-  // Get attendance for a specific date
-  getAttendance: async (date: string): Promise<AttendanceRecord[]> => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 700));
-
-      // Intentar recuperar datos desde el webhook (en un entorno real)
-      const attendanceRecords = await fetchAttendanceFromWebhook(date);
-
-      // Actualizar el almacenamiento local con los datos recuperados
-      if (attendanceRecords.length > 0) {
-        MOCK_ATTENDANCE[date] = attendanceRecords;
-      }
-
-      return attendanceRecords;
-    } catch (error) {
-      console.error("Error al obtener registros de asistencia:", error);
-      toast.error("Error al cargar los datos de asistencia");
-      return [];
-    }
-  },
-
-  // Get statistics
-  getStatistics: async (): Promise<{
-    dailyStats: { date: string, count: number }[],
-    weeklyStats: { week: string, count: number }[],
-    monthlyStats: { month: string, count: number }[],
-    studentStats: { studentId: string, studentName: string, attendedClassesCount: number }[]
-  }> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    const students = await getOrFetchStudents();
-
-    // Process the mock data to generate statistics
-    const dates = Object.keys(MOCK_ATTENDANCE).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-
-    // Daily stats - last 7 days
-    const dailyStats = dates.slice(0, 7).map(date => ({
-      date,
-      count: MOCK_ATTENDANCE[date]?.length || 0
-    }));
-
-    // Si no hay datos, añadir el día de hoy con 0 asistencias
-    if (dailyStats.length === 0) {
-      dailyStats.push({
-        date: getTodayDate(),
-        count: 0
-      });
-    }
-
-    // Weekly stats - Group by week
-    const weeklyMap: Record<string, number> = {};
-    dates.forEach(date => {
-      const d = new Date(date);
-      const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - d.getDay());
-      const weekKey = weekStart.toISOString().split('T')[0];
-
-      if (!weeklyMap[weekKey]) {
-        weeklyMap[weekKey] = 0;
-      }
-      weeklyMap[weekKey] += MOCK_ATTENDANCE[date]?.length || 0;
-    });
-
-    const weeklyStats = Object.entries(weeklyMap)
-      .map(([week, count]) => ({ week, count }))
-      .sort((a, b) => new Date(b.week).getTime() - new Date(a.week).getTime())
-      .slice(0, 4);
-
-    // Si no hay datos semanales, añadir la semana actual con 0 asistencias
-    if (weeklyStats.length === 0) {
-      const today = new Date();
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - today.getDay());
-      weeklyStats.push({
-        week: weekStart.toISOString().split('T')[0],
-        count: 0
-      });
-    }
-
-    // Monthly stats
-    const monthlyMap: Record<string, number> = {};
-    dates.forEach(date => {
-      const monthKey = date.substring(0, 7); // YYYY-MM
-
-      if (!monthlyMap[monthKey]) {
-        monthlyMap[monthKey] = 0;
-      }
-      monthlyMap[monthKey] += MOCK_ATTENDANCE[date]?.length || 0;
-    });
-
-    const monthlyStats = Object.entries(monthlyMap)
-      .map(([month, count]) => ({
-        month,
-        count
-      }))
-      .sort((a, b) => b.month.localeCompare(a.month))
-      .slice(0, 3);
-
-    // Si no hay datos mensuales, añadir el mes actual con 0 asistencias
-    if (monthlyStats.length === 0) {
-      const today = getTodayDate();
-      monthlyStats.push({
-        month: today.substring(0, 7),
-        count: 0
-      });
-    }
-
-    // Student attendance percentage
-    const studentAttendance: Record<string, { present: number, name: string }> = {};
-
-    // Initialize all students with 0 attendance
-    students.forEach(student => {
-      studentAttendance[student.id] = { present: 0, name: student.name };
-    });
-
-    // Count attendance for each student
-    Object.values(MOCK_ATTENDANCE).forEach(records => {
-      records.forEach(record => {
-        if (studentAttendance[record.studentId]) {
-          studentAttendance[record.studentId].present += 1;
-        }
-      });
-    });
-
-    // Calculate attendance count
-    const studentStats = Object.entries(studentAttendance).map(([studentId, data]) => ({
-      studentId,
-      studentName: data.name,
-      attendedClassesCount: data.present
-    })).sort((a, b) => b.attendedClassesCount - a.attendedClassesCount);
-
-    return {
-      dailyStats,
-      weeklyStats,
-      monthlyStats,
-      studentStats
-    };
-  },
-
   // Export attendance to PDF (using webhook)
   exportToPDF: async (date: string): Promise<boolean> => {
     toast.info("Exportando a PDF...");
@@ -367,7 +185,7 @@ export const sheetsService = {
       console.log("Enviando datos de exportación PDF:", webhookData);
 
       // Enviar datos al webhook
-      const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+      const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -434,7 +252,7 @@ export const sheetsService = {
       console.log("Enviando datos de exportación a Sheets:", webhookData);
 
       // Enviar datos al webhook
-      const response = await fetch('https://hook.us1.make.com/y1il17hrwrrymcwjmk6nwbcs8whtcfss', {
+      const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

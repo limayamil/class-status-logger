@@ -29,18 +29,13 @@ export const classesService = {
   },
 
   /**
-   * Incrementa el contador de clases impartidas
-   * @param increment Cantidad a incrementar (opcional, por defecto 1)
+   * Incrementa el contador de clases impartidas en 1
    * @returns Nuevo contador después del incremento
    */
-  incrementTotalClassesHeld: async (increment: number = 1): Promise<number> => {
+  incrementTotalClassesHeld: async (): Promise<number> => {
     try {
       const response = await fetch('/.netlify/functions/get-class-count', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ increment }),
       });
       
       if (!response.ok) {
