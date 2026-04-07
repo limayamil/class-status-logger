@@ -399,6 +399,11 @@ export const sheetsService = {
     }
   },
 
+  // Invalidate student cache (call after mutations)
+  invalidateStudentCache: () => {
+    cachedStudents = null;
+  },
+
   // Export attendance to Google Sheets (using webhook)
   exportToSheets: async (date: string): Promise<boolean> => {
     toast.info("Exportando a Google Sheets...");

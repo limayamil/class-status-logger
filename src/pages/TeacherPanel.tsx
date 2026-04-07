@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
+import StudentsTab from '@/components/StudentsTab';
 import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle, Filter, X, CalendarIcon, TrendingUp, TrendingDown, Minus, Star, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -444,9 +445,10 @@ const TeacherPanel = () => {
         </div>
 
         <Tabs defaultValue="attendance" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="attendance">Asistencia</TabsTrigger>
             <TabsTrigger value="statistics">Estadísticas</TabsTrigger>
+            <TabsTrigger value="students">Alumnos</TabsTrigger>
           </TabsList>
 
           {/* Attendance Tab */}
@@ -1315,6 +1317,11 @@ const TeacherPanel = () => {
               )}
               </TabsContent>
             </motion.div>
+          {/* Students Tab */}
+          <TabsContent value="students" className="space-y-4">
+            <StudentsTab />
+          </TabsContent>
+
           </Tabs>
         </motion.div> {/* Close main content motion.div */}
       </div>
