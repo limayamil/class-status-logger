@@ -11,7 +11,11 @@ import { toast } from 'sonner';
 import { sheetsService } from '@/services/sheetsService';
 import Navigation from '@/components/Navigation';
 import StudentsTab from '@/components/StudentsTab';
-import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle, Filter, X, CalendarIcon, TrendingUp, TrendingDown, Minus, Star, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Search, Calendar, Download, FileUp, BarChart3, Users, Percent, PlusCircle, Filter, X, CalendarIcon, TrendingUp, TrendingDown, Minus, Star, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -95,6 +99,8 @@ const TeacherPanel = () => {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<'pdf' | 'sheets' | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteConfirmRecord, setDeleteConfirmRecord] = useState<AttendanceRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { user } = useAuth();
   
   // Statistics state
@@ -173,6 +179,29 @@ const TeacherPanel = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAttendance = async () => {
+    if (!deleteConfirmRecord?._id) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`/.netlify/functions/delete-asistencia?id=${deleteConfirmRecord._id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        throw new Error(errorData.message || `Error ${response.status}`);
+      }
+      setAttendanceRecords(prev => prev.filter(r => r._id !== deleteConfirmRecord._id));
+      toast.success(`Asistencia de ${deleteConfirmRecord.studentName} eliminada.`);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error al eliminar la asistencia';
+      toast.error(msg);
+      console.error(error);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmRecord(null);
     }
   };
 
@@ -581,7 +610,8 @@ const TeacherPanel = () => {
                           <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Nombre</th> 
                           {/* <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">DNI</th> */} {/* Columna DNI eliminada */}
                           {/* Changed text-gray-500 to text-muted-foreground */}
-                          <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Hora</th> 
+                          <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Hora</th>
+                          <th className="py-3 px-4 text-right text-sm font-medium text-muted-foreground">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -593,12 +623,23 @@ const TeacherPanel = () => {
                             <td className="py-3 px-4 text-foreground">{record.studentName}</td> 
                             {/* <td className="py-3 px-4 text-gray-800">{record.dni}</td> */} {/* Celda DNI eliminada */}
                             {/* Changed text-gray-600 to text-muted-foreground */}
-                            <td className="py-3 px-4 text-muted-foreground"> 
+                            <td className="py-3 px-4 text-muted-foreground">
                               {/* Asegurarse de que timestamp es un string ISO válido antes de crear Date */}
                               {record.timestamp ? new Date(record.timestamp).toLocaleTimeString('es-ES', {
                                 hour: '2-digit',
                                 minute: '2-digit'
                               }) : ''} {/* Añadido fallback por si timestamp no existe */}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => setDeleteConfirmRecord(record)}
+                                title="Eliminar asistencia"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -613,6 +654,32 @@ const TeacherPanel = () => {
                 )}
                 </CardContent>
               </Card>
+
+              <AlertDialog
+                open={!!deleteConfirmRecord}
+                onOpenChange={(open) => !open && setDeleteConfirmRecord(null)}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminar asistencia</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      ¿Estás seguro de que querés eliminar la asistencia de{' '}
+                      <strong>{deleteConfirmRecord?.studentName}</strong>? Esta acción no se puede deshacer.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAttendance}
+                      disabled={deleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </motion.div>
             </TabsContent>
           </motion.div>
